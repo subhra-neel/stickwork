@@ -45,6 +45,15 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .srow .btn:first-child{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .srow span{color:var(--mute);font-size:13px}
 #tempoV{min-width:9em;white-space:nowrap}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.chips .btn{padding:6px 10px;font-size:13px}
+.stars{font-size:28px;letter-spacing:2px;color:#e8a317}
+#resCard ul{margin:6px 0;padding-left:18px}
+#resCard li{margin:3px 0}
+#perfBar{display:none;gap:10px;align-items:center;padding:8px 10px}
+#perfHud{flex:1;text-align:center;font-size:30px;font-weight:700}
+body.perf .bar,body.perf .row,body.perf #stats,body.perf #staffWrap,body.perf details{display:none}
+body.perf #perfBar{display:flex}
 #empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--mute);pointer-events:none;line-height:1.5}
 #pads{display:grid;grid-template-columns:repeat(13,1fr);gap:3px;padding:6px 8px 8px}
 .pad{height:68px;border:0;border-radius:9px;padding:0;line-height:1.1;color:#14151d;font:700 11px "Barlow Semi Condensed",system-ui,sans-serif;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
@@ -63,6 +72,8 @@ summary{cursor:pointer}
   <button class="btn" id="midi">Connect drum kit</button>
   <button class="btn" id="songs">Songs</button>
   <button class="btn" id="prog">Progress</button>
+  <button class="btn" id="lessonsB">Lessons</button>
+  <button class="btn" id="perfB">Performance</button>
   <span id="title">No song loaded</span>
 </div>
 <div class="bar" style="padding-top:2px">
@@ -71,6 +82,7 @@ summary{cursor:pointer}
   <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="hear" type="checkbox" style="display:inline;margin:0"> Play drums for me</label>
   <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="prac" type="checkbox" style="display:inline;margin:0"> Practice: wait for me</label>
   <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="trn" type="checkbox" style="display:inline;margin:0"> Speed trainer</label>
+  <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="bkOn" type="checkbox" checked style="display:inline;margin:0"> Backing music</label>
 </div>
 <div class="row"><span>Tempo</span><input id="tempo" type="range" min="40" max="120" step="5" value="100"><b id="tempoV">100%</b></div>
 <div class="row"><span>Position</span><input id="seek" type="range" min="0" max="1000" value="0"><b id="pos">0:00</b></div>
@@ -85,15 +97,19 @@ summary{cursor:pointer}
 </div>
 <div class="row"><span>Loop gap</span><input id="gap" type="range" min="0" max="8" step="1" value="0"><b id="gapV" style="min-width:5em;white-space:nowrap">0 beats</b></div>
 <div id="stats"><span id="acc">–</span><span id="cmb"></span><span id="judge">Load a MIDI drum file to begin.</span></div>
+<div id="perfBar"><button class="btn main" id="perfGo">Start</button><span id="perfHud">–</span><button class="btn" id="perfExit">Exit</button></div>
 <div id="res"><div id="resCard"></div></div>
 <div id="staffWrap"><canvas id="staff"></canvas></div>
 <div id="stage">
   <canvas id="cv"></canvas>
-  <div id="empty">Load a drum MIDI file.<br>Tap the pads, press the keyboard keys Q A S Z D X F G H J K L and Space, or connect an e-drum kit over USB.</div>
+  <div id="empty">Tap <b>Lessons</b> for built-in practice, or load a drum MIDI file.<br>Tap the pads, press the keyboard keys Q A S Z D X F G H J K L and Space, or connect an e-drum kit over USB.</div>
 </div>
 <div id="pads"></div>
 <details><summary>Settings</summary>
   <div class="row" style="padding:6px 0"><span>Input latency</span><input id="lat" type="range" min="-150" max="150" step="5" value="0"><b id="latV">0 ms</b></div>
+<div class="row" style="padding:6px 0"><span>Click</span><select id="subSel" class="btn"><option value="1">Beats</option><option value="2">Eighths</option><option value="4">Sixteenths</option></select></div>
+<div style="padding:4px 0"><div style="margin-bottom:4px">Focus on these pads (the app plays the others for you):</div><div id="focusRow" class="chips"></div></div>
+<div id="mdiag" style="padding:2px 0;color:var(--mute)">MIDI clock offset: –</div>
 <div id="pstat" style="padding:4px 0"></div>
 <div class="row" style="padding:2px 0"><span>Version</span><b id="ver" style="min-width:0;text-align:left"></b></div>
 </details>
@@ -213,16 +229,17 @@ function cur(){return playing?startSong+(performance.now()-startWall)/1000*rate:
 function stat(){
   $("acc").textContent=jc?Math.round(score/jc*100)+"%":"–";
   $("cmb").textContent=combo>1?combo+" in a row":"";
+  $("perfHud").textContent=(jc?Math.round(score/jc*100)+"%":"–")+(combo>1?"  ×"+combo:"");
 }
 function say(t){$("judge").textContent=t}
 const fmt=t=>{t=Math.max(0,t);return Math.floor(t/60)+":"+String(Math.floor(t%60)).padStart(2,"0")};
 const lead=()=>bd*tsNum;
 const beatT=i=>i<0?i*bd:(i<beats.length?beats[i]:Infinity);
 function setNb(t){
-  if(t<0){nb=-Math.floor(-t/bd+1e-6);return}
+  if(t<0){nb=-Math.floor(-t/bd+1e-6);bi=0;return}
   let lo=0,hi=beats.length;
   while(lo<hi){const m=(lo+hi)>>1;if(beats[m]<t-.001)lo=m+1;else hi=m}
-  nb=lo;
+  nb=lo;bi=back.findIndex(x=>x.t>=t-.03);if(bi<0)bi=back.length;
 }
 function snap(t){
   if(!beats.length||t<0)return Math.max(0,t);
@@ -230,16 +247,16 @@ function snap(t){
   for(const x of beats){if(Math.abs(x-t)<Math.abs(b-t))b=x;else if(x>t)break}
   return b;
 }
-function clk(at,accent){
+function clk(at,accent,v=1){
   const o=ac.createOscillator(),g=ac.createGain();
   o.frequency.value=accent?1600:1100;
-  g.gain.setValueAtTime(.35,at);g.gain.exponentialRampToValueAtTime(.001,at+.05);
+  g.gain.setValueAtTime(.35*v,at);g.gain.exponentialRampToValueAtTime(.001,at+.05);
   o.connect(g);g.connect(ac.destination);o.start(at);o.stop(at+.06);
 }
 function seekTo(t,from=t){waiting=false;gapEnd=-Infinity;
   songTime=t;
   for(const n of notes){
-    if(n.t>=from-.02){n.j=0;n.s=0;n.r=""}else{n.j=1;n.r="skip"}
+    if(n.t>=from-.02){n.j=focus[n.l]?0:1;n.s=0;n.r=focus[n.l]?"":"skip"}else{n.j=1;n.r="skip"}
   }
   if(playing){startSong=t;startWall=performance.now()}
   if(audio){audio.pause();audio.currentTime=Math.max(0,t)}
@@ -251,8 +268,8 @@ function updLoop(){
   $("loopInfo").textContent=(loopA!=null||loopB!=null)?"A "+(loopA!=null?fmt(loopA):"–")+"   B "+(loopB!=null?fmt(loopB):"–"):"";
 }
 function reset(){
-  notes.forEach(n=>{n.j=0;n.s=0;n.r=""});
-  score=jc=combo=bestCombo=misses=0;playing=false;fin=false;songTime=-lead();setNb(songTime);waiting=false;gapEnd=-Infinity;s0=j0=0;ls.forEach(q=>{q.n=q.s=q.a=q.m=0});
+  notes.forEach(n=>{n.j=focus[n.l]?0:1;n.s=0;n.r=focus[n.l]?"":"skip"});
+  score=jc=combo=bestCombo=misses=0;playing=false;fin=false;songTime=-lead();setNb(songTime);waiting=false;gapEnd=-Infinity;s0=j0=0;ls.forEach(q=>{q.n=q.s=q.a=q.m=0});missT.length=0;
   if(audio){audio.pause();audio.currentTime=0}
   stat();
 }
@@ -270,14 +287,25 @@ function pause(){
   $("play").textContent="Play";
 }
 function finish(){
-  playing=false;fin=true;if(audio)audio.pause();showResults();
+  playing=false;fin=true;if(audio)audio.pause();$("perfGo").textContent="Start";showResults();
   $("play").textContent="Play";
   say(`Done – ${jc?Math.round(score/jc*100):0}% accuracy, ${misses} missed, best run ${bestCombo}`);
 }
 function hit(l,ts){
   initAudio();snd(l);flash[l]=1;
   if(!playing||songTime<-0.15)return;
-  const t=startSong+((ts-lat)-startWall)/1000*rate;
+  let t=startSong+((ts-lat)-startWall)/1000*rate;
+  if(!isFinite(t)||Math.abs(t-songTime)>.3)t=songTime;
+  if(practice){
+    for(const n of notes){
+      if(n.t>songTime+.12)break;
+      if(!n.j&&n.l===l){n.j=1;n.r="hit";jc++;combo++;if(combo>bestCombo)bestCombo=combo;score+=1;stat();say("Hit");return}
+    }
+    combo=0;stat();
+    if(waiting){const w=[...new Set(notes.filter(n=>!n.j&&Math.abs(n.t-songTime)<.02).map(n=>L[n.l].n))];say("Waiting for "+w.join(" + "))}
+    else say(L[l].n+" is not needed right now");
+    return;
+  }
   let best=null,bd=0.15;
   for(const n of notes){
     if(n.t>t+0.2)break;
@@ -418,7 +446,7 @@ function bestText(){
 function saveRun(acc,miss){
   const h=jget("sw_hist",{});
   const e=h[songId]||(h[songId]={name:songName,runs:[]});
-  e.runs.push({d:Date.now(),acc,miss,tempo:Math.round(rate*100)});
+  e.runs.push({d:Date.now(),acc,miss,tempo:Math.round(rate*100),perf:perf?1:0});
   if(e.runs.length>40)e.runs.shift();
   jset("sw_hist",h);
 }
@@ -447,19 +475,42 @@ function showResults(){
   const acc=Math.round(score/jc*100);
   let n=0,sm=0,sa=0;ls.forEach(q=>{n+=q.n;sm+=q.s;sa+=q.a});
   const avg=n?Math.round(sm/n):0,err=n?Math.round(sa/n):0;
+  const c=coach(acc,avg);
   const trend=Math.abs(avg)<8?"Steady – you stay right on the beat.":(avg<0?`You tend to rush by about ${-avg} ms.`:`You tend to drag by about ${avg} ms.`);
   let worst=-1,wv=0;
   ls.forEach((q,i)=>{const tot=q.n+q.m;if(tot<3)return;const v=q.m/tot+(q.a/Math.max(q.n,1))/400;if(v>wv){wv=v;worst=i}});
   const rows=ls.map((q,i)=>q.n+q.m?`<tr><td><i style="background:${L[i].c}"></i>${L[i].n}</td><td>${q.n}</td><td>${q.m}</td><td>${q.n?(q.s>0?"+":"")+Math.round(q.s/q.n)+" ms":"–"}</td></tr>`:"").join("");
   saveRun(acc,misses);
+  const st=acc>=95?5:acc>=90?4:acc>=80?3:acc>=65?2:1;
   let extra="";
   if($("trn").checked&&acc>=90&&Math.round(rate*100)<120){const v=Math.round(rate*100)+5;bump(v);extra=`<p><b>Clean run – tempo raised to ${v}%.</b></p>`}
-  panel(`<h2>Run complete</h2><div class="big">${acc}%</div><p>Average timing error ${err} ms. ${trend}</p>${worst>=0?`<p>Needs the most work: <b>${L[worst].n}</b>.</p>`:""}${extra}<table><tr><th>Pad</th><th>Hit</th><th>Missed</th><th>Avg</th></tr>${rows}</table><div class="btns"><button class="btn main" id="rAgain">Play again</button><button class="btn" id="rClose">Close</button></div>`);
+  panel(`<h2>${perf?"Performance complete":"Run complete"}</h2>${perf?`<div class="stars">${"★".repeat(st)}${"☆".repeat(5-st)}</div>`:""}<div class="big">${acc}%</div><p>Average timing error ${err} ms. ${trend}</p>${worst>=0?`<p>Needs the most work: <b>${L[worst].n}</b>.</p>`:""}${extra}<ul>${c.tips.map(t=>`<li>${t}</li>`).join("")}</ul><table><tr><th>Pad</th><th>Hit</th><th>Missed</th><th>Avg</th></tr>${rows}</table><div class="btns">${c.hardBar?`<button class="btn" id="rLoop">Loop bar ${c.hardBar}</button>`:""}<button class="btn main" id="rAgain">Play again</button><button class="btn" id="rClose">Close</button></div>`);
   $("rClose").onclick=closePanel;
   $("rAgain").onclick=()=>{closePanel();reset();play()};
+  if(c.hardBar)$("rLoop").onclick=()=>{
+    loopA=beats[(c.hardBar-1)*tsNum];loopB=beats[Math.min(c.hardBar*tsNum,beats.length-1)];loopOn=true;updLoop();
+    closePanel();reset();bump(Math.max(40,Math.round(rate*100)-15));seekTo(loopA-lead(),loopA);gapEnd=loopA;play();
+  };
   $("title").textContent=songName+bestText();
 }
 function showProgress(){
+  if(!songId){say("Load a song or pick a lesson first.");return}
+  const h=jget("sw_hist",{})[songId],runs=h?h.runs:[];
+  const goals=jget("sw_goals",{}),g=goals[songId]||{tempo:100,acc:90};
+  const accNow=Math.max(0,...runs.filter(r=>r.tempo>=g.tempo).map(r=>r.acc));
+  const tempoNow=Math.max(0,...runs.filter(r=>r.acc>=g.acc).map(r=>r.tempo));
+  const pct=Math.round(Math.min(1,accNow/g.acc)*50+Math.min(1,tempoNow/g.tempo)*50);
+  const rows=runs.slice(-12).reverse().map(r=>`<tr><td>${new Date(r.d).toLocaleDateString(undefined,{day:"numeric",month:"short"})}${r.perf?" ★":""}</td><td>${r.tempo}%</td><td>${r.acc}%</td><td>${r.miss}</td></tr>`).join("");
+  const best=runs.length?Math.max(...runs.map(r=>r.acc)):0;
+  panel(`<h2>${esc(songName)}</h2><p>${runs.length?`${runs.length} runs · best ${best}%`:"No finished runs yet."}</p>
+  <p><b>Goal:</b> <input id="gA" type="number" min="50" max="100" value="${g.acc}" style="width:4em"> % accuracy at <input id="gT" type="number" min="40" max="120" value="${g.tempo}" style="width:4em"> % tempo <button class="btn" id="gS">Save</button></p>
+  <div style="height:10px;border-radius:6px;background:var(--line);overflow:hidden"><i style="display:block;width:${pct}%;height:100%;border-radius:0;margin:0;background:var(--ink)"></i></div>
+  <p>${pct>=100?"Goal reached! Time to set a harder one.":"Goal progress: "+pct+"%"}</p>
+  ${rows?`<table><tr><th>Date</th><th>Tempo</th><th>Accuracy</th><th>Missed</th></tr>${rows}</table>`:""}<div class="btns"><button class="btn" id="rClose">Close</button></div>`);
+  $("rClose").onclick=closePanel;
+  $("gS").onclick=()=>{goals[songId]={acc:Math.min(100,Math.max(50,+$("gA").value||90)),tempo:Math.min(120,Math.max(40,+$("gT").value||100))};jset("sw_goals",goals);showProgress()};
+}
+function showProgressOld(){
   const h=jget("sw_hist",{})[songId];
   if(!h||!h.runs.length){
     panel(`<h2>Progress</h2><p>No finished runs for this song yet. Finish a run (not in Practice mode) and it shows up here.</p><div class="btns"><button class="btn" id="rClose">Close</button></div>`);
@@ -490,6 +541,131 @@ async function showSongs(){
   document.querySelectorAll("#resCard [data-d]").forEach(b=>b.onclick=async()=>{await delSong(list[+b.dataset.d].name);showSongs()});
 }
 
+/* ---------- lessons, backing, focus, performance ---------- */
+let sub=1,back=[],bi=0,perf=false;
+const focus=L.map(()=>true);
+const missT=[];
+const LV=["Beginner","Elementary","Intermediate","Advanced","Expert"];
+const LK={C:0,H:1,O:2,P:3,S:4,R:5,"1":6,"2":7,"3":8,"4":9,D:10,Y:11,K:12};
+const G8={H:"x.x.x.x.x.x.x.x.",K:"x.......x.......",S:"....x.......x..."};
+const CR={C:"x..............."};
+const LES=[
+{id:"b1",lv:0,n:"Hi-hat on every beat",bpm:70,rep:8,bars:[{H:"x...x...x...x..."}]},
+{id:"b2",lv:0,n:"Kick on 1 and 3",bpm:70,rep:8,bars:[{H:"x...x...x...x...",K:"x.......x......."}]},
+{id:"b3",lv:0,n:"Kick and snare backbeat",bpm:70,rep:8,bars:[{H:"x...x...x...x...",K:G8.K,S:G8.S}]},
+{id:"b4",lv:0,n:"Basic rock beat",bpm:75,rep:8,bars:[G8]},
+{id:"b5",lv:0,n:"Four on the floor",bpm:80,rep:8,bars:[{H:G8.H,K:"x...x...x...x...",S:G8.S}]},
+{id:"e1",lv:1,n:"Rock beat with a busier kick",bpm:80,rep:8,bars:[{...G8,K:"x.......x.x....."}]},
+{id:"e2",lv:1,n:"Open hi-hat accent",bpm:80,rep:8,bars:[{H:"x.x.x.x.x.x.x...",O:"..............x.",K:G8.K,S:G8.S}]},
+{id:"e3",lv:1,n:"Ride cymbal groove",bpm:85,rep:8,bars:[{Y:G8.H,K:G8.K,S:G8.S}]},
+{id:"e4",lv:1,n:"Cross-stick groove",bpm:80,rep:8,bars:[{H:G8.H,K:G8.K,R:G8.S}]},
+{id:"e5",lv:1,n:"Groove with a snare fill",bpm:80,rep:4,bars:[{...G8,...CR},G8,G8,{H:"x.x.x.x.",K:"x.......",S:"........x.x.x.x."}]},
+{id:"i1",lv:2,n:"Sixteenth-note hi-hat groove",bpm:80,rep:8,bars:[{...G8,H:"xxxxxxxxxxxxxxxx"}]},
+{id:"i2",lv:2,n:"Funk groove",bpm:85,rep:8,bars:[{H:"xxxxxxxxxxxxxxxx",K:"x..x..x.",S:G8.S}]},
+{id:"i3",lv:2,n:"Shuffle (triplet feel)",bpm:90,r:3,rep:8,bars:[{H:"x.xx.xx.xx.x",K:"x.....x.....",S:"...x.....x.."}]},
+{id:"i4",lv:2,n:"Single-stroke roll on the snare",bpm:70,rep:8,bars:[{S:"xxxxxxxxxxxxxxxx"}]},
+{id:"i5",lv:2,n:"Groove with a tom fill",bpm:80,rep:4,bars:[{...G8,...CR},G8,G8,{H:"x.x.x.x.",K:"x.......",S:"........x.......","1":"..........x.....","2":"............x...","3":"..............x."}]},
+{id:"i6",lv:2,n:"Half-time groove",bpm:80,rep:8,bars:[{H:G8.H,K:"x.........x.....",S:"........x......."}]},
+{id:"i7",lv:2,n:"Waltz in 3/4",bpm:90,ts:3,rep:8,bars:[{H:"x.x.x.x.x.x.",K:"x...........",S:"....x...x..."}]},
+{id:"a1",lv:3,n:"Syncopated funk kick",bpm:85,rep:8,bars:[{H:"xxxxxxxxxxxxxxxx",K:"x.x...x..x.x....",S:"....x.......x..x"}]},
+{id:"a2",lv:3,n:"Linear groove",bpm:80,rep:8,bars:[{K:"x.....x..x......",S:"...x......x..x..",H:".xx.xx.xx..xx.xx"}]},
+{id:"a3",lv:3,n:"Double kick with a rock backbeat",bpm:80,rep:8,bars:[{H:G8.H,K:"x.xx....x.xx....",S:G8.S}]},
+{id:"a4",lv:3,n:"Groove in 5/4",bpm:85,ts:5,rep:8,bars:[{H:"x.x.x.x.x.x.x.x.x.x.",K:"x.......x.x.",S:"....x.......x......."}]},
+{id:"a5",lv:3,n:"Sixteenth-note tom run",bpm:80,rep:4,bars:[{...G8,...CR},G8,G8,{H:"x.x.x.x.",K:"x.......",S:"........xx......","1":"..........xx....","2":"............xx..","3":"..............xx"}]},
+{id:"x1",lv:4,n:"Fast single strokes",bpm:100,rep:8,bars:[{S:"xxxxxxxxxxxxxxxx"}]},
+{id:"x2",lv:4,n:"Blast beat build-up",bpm:90,rep:8,bars:[{Y:"xxxxxxxxxxxxxxxx",K:G8.H,S:".x.x.x.x.x.x.x.x"}]},
+{id:"x3",lv:4,n:"Hat and open-hat 16th groove",bpm:85,rep:8,bars:[{H:"xxx.xxx.xxx.xxx.",O:"...x...x...x...x",K:"x..x..x...x.....",S:"....x.......x..x"}]},
+{id:"x4",lv:4,n:"Groove in 7/4",bpm:80,ts:7,rep:6,bars:[{H:"x.x.x.x.x.x.x.x.x.x.x.x.x.x.",K:"x.......x.x.....x.......",S:"....x.......x.......x..."}]},
+{id:"x5",lv:4,n:"Full-kit fill",bpm:80,rep:4,bars:[{...G8,...CR},G8,G8,{S:"xxxx............","1":"....xxxx........","2":"........xx......","3":"..........xx....","4":"............xx..",K:"..............xx"}]}
+];
+
+function openLesson(les){
+  const ts=les.ts||4,r=les.r||4,spb=ts*r,bd0=60/les.bpm,sd=bd0/r,nbars=les.rep*les.bars.length;
+  const out=[],bk2=[],ROOT=[0,5,7,5];
+  for(let b=0;b<nbars;b++){
+    const m=les.bars[b%les.bars.length],t0=b*spb*sd,root=ROOT[b%4];
+    for(const k in m){
+      const s=(m[k]+".".repeat(spb)).slice(0,spb);
+      for(let i=0;i<spb;i++)if(s[i]==="x")out.push({t:t0+i*sd,l:LK[k]});
+    }
+    const kk=m.K?(m.K+".".repeat(spb)).slice(0,spb):"",hits=[];
+    for(let i=0;i<spb;i++)if(kk[i]==="x")hits.push(i);
+    if(!hits.length)hits.push(0,Math.floor(spb/2/r)*r);
+    const bf=55*Math.pow(2,root/12);
+    for(const i of hits)bk2.push({t:t0+i*sd,d:sd*r*.9,f:[bf],w:"triangle",v:.4});
+    bk2.push({t:t0,d:spb*sd*.95,f:[0,3,7].map(x=>220*Math.pow(2,(root+x)/12)),w:"sine",v:.07});
+  }
+  out.sort((a,b)=>a.t-b.t);bk2.sort((a,b)=>a.t-b.t);
+  notes=out;endT=out[out.length-1].t+1.5;
+  beats=[];for(let k=0;k<=nbars*ts+2;k++)beats.push(k*bd0);
+  back=bk2;tsNum=ts;bd=bd0;baseBpm=les.bpm;
+  loopA=loopB=null;loopOn=false;updLoop();
+  songId="lesson:"+les.id;songName=les.n;
+  $("title").textContent=les.n+" · "+LV[les.lv]+bestText();
+  $("empty").style.display="none";
+  $("bkOn").checked=true;bump(100);reset();$("play").textContent="Play";
+  say(`${out.length} notes · ${les.bpm} BPM · ${LV[les.lv]} lesson`);
+}
+function bk(x,at){
+  const d=x.d/rate,g=ac.createGain();g.connect(ac.destination);
+  g.gain.setValueAtTime(.0001,at);g.gain.exponentialRampToValueAtTime(x.v,at+.01);g.gain.exponentialRampToValueAtTime(.0001,at+d);
+  for(const f of x.f){const o=ac.createOscillator();o.type=x.w;o.frequency.value=f;o.connect(g);o.start(at);o.stop(at+d+.02)}
+}
+const lessonRuns=id=>{const h=jget("sw_hist",{})["lesson:"+id];return h?h.runs:[]};
+const mastered=id=>lessonRuns(id).some(r=>r.acc>=85&&r.tempo>=90);
+const bestOf=id=>{const r=lessonRuns(id);return r.length?Math.max(...r.map(x=>x.acc)):null};
+function myLevel(){
+  let lv=0;
+  for(let i=0;i<LV.length;i++){
+    const arr=LES.filter(x=>x.lv===i);
+    if(arr.filter(x=>mastered(x.id)).length>=Math.ceil(arr.length*.6))lv=Math.min(i+1,LV.length-1);else break;
+  }
+  return lv;
+}
+function showLessons(sel){
+  const now=myLevel();if(sel==null)sel=now;
+  const chips=LV.map((n,i)=>`<button class="btn${i===sel?" main":""}" data-lv="${i}">${n}</button>`).join("");
+  const next=LES.find(x=>!mastered(x.id));
+  const rows=LES.filter(x=>x.lv===sel).map(x=>{const b=bestOf(x.id);return `<div class="srow"><button class="btn" data-id="${x.id}">${mastered(x.id)?"✓ ":""}${esc(x.n)}</button><span>${x.bpm} BPM${b!=null?" · "+b+"%":""}</span></div>`}).join("");
+  panel(`<h2>Practice lessons</h2><p>Your level: <b>${LV[now]}</b>. ${next?"Next up: "+esc(next.n)+".":"You have mastered every lesson. Nicely done."}</p><div class="chips">${chips}</div>${rows}<p style="color:var(--mute);font-size:13px">A lesson counts as mastered at 85% accuracy or better at 90% tempo or faster. Master about 60% of a level to move up to the next.</p><div class="btns"><button class="btn" id="rClose">Close</button></div>`);
+  $("rClose").onclick=closePanel;
+  document.querySelectorAll("#resCard [data-lv]").forEach(b=>b.onclick=()=>showLessons(+b.dataset.lv));
+  document.querySelectorAll("#resCard [data-id]").forEach(b=>b.onclick=()=>{closePanel();openLesson(LES.find(x=>x.id===b.dataset.id))});
+}
+function coach(acc,avg){
+  const tips=[];let hardBar=0;
+  if(missT.length&&beats.length){
+    const cnt={};
+    missT.forEach(t=>{let i=0;while(i+1<beats.length&&beats[i+1]<=t)i++;const b=Math.floor(i/tsNum)+1;cnt[b]=(cnt[b]||0)+1});
+    const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];
+    if(top&&top[1]>=2){hardBar=+top[0];tips.push(`Most of your misses are in bar ${hardBar}. Loop just that bar at a slower tempo until it feels easy.`)}
+  }
+  ls.forEach((q,i)=>{if(q.n>=4){const m=q.s/q.n;if(Math.abs(m)>=20)tips.push(`Your ${L[i].n} lands about ${Math.round(Math.abs(m))} ms ${m>0?"late":"early"}. Listen for it against the click.`)}});
+  if(Math.abs(avg)>=10)tips.push(avg>0?"Overall you drag a little. Try counting out loud on the beat.":"Overall you rush a little. Relax and let the click lead you.");
+  if(acc>=92)tips.push("That was clean. Raise the tempo by 5% or switch on the Speed trainer.");
+  else if(acc<70)tips.push(`Slow down to about ${Math.max(40,Math.round(rate*100)-15)}% and try Practice mode first.`);
+  return {tips:tips.slice(0,3),hardBar};
+}
+function drawFocus(){
+  const row=$("focusRow");
+  row.innerHTML=L.map((l,i)=>`<button class="btn${focus[i]?" main":""}" data-f="${i}">${l.n}</button>`).join("")+`<button class="btn" data-p="all">All</button><button class="btn" data-p="hands">Hands only</button><button class="btn" data-p="feet">Feet only</button>`;
+  row.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{focus[+b.dataset.f]=!focus[+b.dataset.f];applyFocus()});
+  row.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{const p=b.dataset.p;L.forEach((l,i)=>{const foot=i===3||i===12;focus[i]=p==="all"?true:p==="feet"?foot:!foot});applyFocus()});
+}
+function applyFocus(){
+  if(!focus.some(Boolean))focus.fill(true);
+  if(playing)pause();
+  reset();drawFocus();
+  say("Focus updated. The app plays the pads you turned off.");
+}
+function setPerf(on){
+  if(on&&!notes.length){say("Load a song or pick a lesson first.");return}
+  perf=on;document.body.classList.toggle("perf",on);
+  if(playing)pause();
+  if(on){practice=false;$("prac").checked=false;$("trn").checked=false;loopOn=false;updLoop();$("hear").checked=false;bump(100)}
+  reset();$("perfGo").textContent="Start";
+}
+
 function frame(){
   requestAnimationFrame(frame);
   if(playing){
@@ -507,8 +683,8 @@ function frame(){
     const hear=$("hear").checked;
     for(const n of notes){
       if(n.t>songTime+0.2)break;
-      if(!practice&&!n.j&&n.t<songTime-0.15){n.j=1;n.r="miss";jc++;misses++;combo=0;ls[n.l].m++;stat()}
-      if(hear&&!n.s&&n.t<=songTime){n.s=1;snd(n.l);flash[n.l]=1}
+      if(!practice&&!n.j&&n.t<songTime-0.15){n.j=1;n.r="miss";jc++;misses++;combo=0;ls[n.l].m++;missT.push(n.t);stat()}
+      if((hear||!focus[n.l])&&!n.s&&n.t<=songTime){n.s=1;snd(n.l);flash[n.l]=1}
     }
     if(loopOn&&loopA!=null&&loopB!=null&&loopB>loopA+.2&&songTime>=loopB){
       passDone();const g=gapBeats*bd;
@@ -522,7 +698,17 @@ function frame(){
       if(tb>songTime+(practice?.02:.12*rate))break;
       if(looping&&tb>=loopB)break;
       if(tb>=songTime-.03&&(nb<0||met||tb<gapEnd))clk(ac.currentTime+Math.max(0,(tb-songTime)/rate),((nb%tsNum)+tsNum)%tsNum===0);
+      if(met&&nb>=0&&sub>1&&!practice){
+        const nt=beatT(nb+1),span=(isFinite(nt)?nt:tb+bd)-tb;
+        for(let k=1;k<sub;k++){const t2=tb+k*span/sub;if(t2>=songTime-.03&&!(looping&&t2>=loopB))clk(ac.currentTime+Math.max(0,(t2-songTime)/rate),false,.45)}
+      }
       nb++;
+    }
+    if(!practice&&!waiting){
+      while(bi<back.length&&back[bi].t<=songTime+.12*rate){
+        const x=back[bi++];
+        if(ac&&$("bkOn").checked&&x.t>=songTime-.03&&!(looping&&x.t>=loopB))bk(x,ac.currentTime+Math.max(0,(x.t-songTime)/rate));
+      }
     }
     if(songTime>endT)finish();
   }
@@ -547,6 +733,11 @@ addEventListener("keydown",e=>{
 });
 addEventListener("keyup",e=>{if(e.key===" ")e.preventDefault()});
 
+function midiTime(m){
+  const now=performance.now(),d=now-m.timeStamp,ok=isFinite(d)&&d>=-20&&d<=120;
+  $("mdiag").textContent="MIDI clock offset: "+(isFinite(d)?Math.round(d):"n/a")+" ms"+(ok?"":" (out of step, using the screen clock)");
+  return ok?m.timeStamp:now;
+}
 $("midi").onclick=async()=>{
   if(!navigator.requestMIDIAccess){say("This browser has no Web MIDI. Use Chrome on Android.");return}
   try{
@@ -558,7 +749,7 @@ $("midi").onclick=async()=>{
           const [s,n,v]=m.data;
           if((s&0xF0)===0x90&&v>0){
             const l=kitLane[n]??noteLane[n];
-            if(l!==undefined)hit(l,m.timeStamp);else say("Unmapped drum note "+n);
+            if(l!==undefined)hit(l,midiTime(m));else say("Unmapped drum note "+n);
           }
         };
         names.push(inp.name);
@@ -578,7 +769,7 @@ $("mid").onchange=async e=>{
     beats=r.beats;tsNum=r.tsNum;bd=beats.length>1?beats[1]-beats[0]:.5;
     loopA=loopB=null;loopOn=false;updLoop();
     songId=f.name+"|"+notes.length;songName=f.name;saveSong(f.name,buf,songId);
-    baseBpm=r.bpm;$("tempo").dispatchEvent(new Event("input"));
+    back=[];baseBpm=r.bpm;$("tempo").dispatchEvent(new Event("input"));
     $("title").textContent=f.name+bestText();$("empty").style.display="none";
     reset();$("play").textContent="Play";
     say(`${notes.length} notes · ${r.bpm} BPM`+(r.usedAll?" · no drum channel, used all notes":""));
@@ -643,6 +834,15 @@ function applyStaff(){
 }
 applyStaff();
 
+$("lessonsB").onclick=()=>showLessons();
+$("perfB").onclick=()=>setPerf(!perf);
+$("perfExit").onclick=()=>setPerf(false);
+$("perfGo").onclick=()=>{
+  if(playing){pause();reset();$("perfGo").textContent="Start"}
+  else{play();$("perfGo").textContent="Stop"}
+};
+$("subSel").onchange=e=>{sub=+e.target.value};
+drawFocus();
 $("songs").onclick=showSongs;
 $("prog").onclick=showProgress;
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&tPlay>2000){addTime(tPlay/1000);tPlay=0}});
@@ -651,7 +851,7 @@ showStats();
 songTime=-2;resize();requestAnimationFrame(frame);
 </script>
 <script>
-const APP_VERSION="1.2.0";
+const APP_VERSION="1.3.0";
 document.getElementById("ver").textContent="v"+APP_VERSION;
 try{
   const prev=localStorage.getItem("sw_ver");

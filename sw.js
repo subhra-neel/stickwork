@@ -1,5 +1,5 @@
 // Bump VERSION here and APP_VERSION in index.html together for every release.
-const VERSION = "1.2.0";
+const VERSION = "1.3.0";
 const CACHE = "stickwork-" + VERSION;
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
