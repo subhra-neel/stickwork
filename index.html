@@ -32,13 +32,26 @@ input[type=file]{display:none}
 canvas{width:100%;height:100%;display:block;touch-action:none}
 #staffWrap{flex:none;height:112px;margin:0 8px 6px;border-radius:12px;overflow:hidden;background:var(--stage)}
 #staffWrap.off{display:none}
+#res{display:none;position:fixed;inset:0;z-index:30;background:#0008;align-items:center;justify-content:center;padding:16px}
+#resCard{background:var(--panel);color:var(--ink);border-radius:16px;padding:18px;max-width:460px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 8px 30px #0008;-webkit-user-select:text;user-select:text}
+#resCard h2{margin:0 0 6px;font-size:20px}
+#resCard .big{font-size:56px;font-weight:700;line-height:1}
+#resCard table{width:100%;border-collapse:collapse;margin:8px 0;font-size:14px}
+#resCard th{text-align:left;color:var(--mute);font-weight:500}
+#resCard td,#resCard th{padding:4px 6px 4px 0}
+#resCard i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+#resCard .btns{display:flex;gap:8px;margin-top:10px}
+.srow{display:flex;gap:8px;align-items:center;margin:6px 0}
+.srow .btn:first-child{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srow span{color:var(--mute);font-size:13px}
+#tempoV{min-width:9em;white-space:nowrap}
 #empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--mute);pointer-events:none;line-height:1.5}
 #pads{display:grid;grid-template-columns:repeat(13,1fr);gap:3px;padding:6px 8px 8px}
 .pad{height:68px;border:0;border-radius:9px;padding:0;line-height:1.1;color:#14151d;font:700 11px "Barlow Semi Condensed",system-ui,sans-serif;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .pad:active{filter:brightness(.8);transform:scale(.97)}
 details{padding:0 10px 2px;color:var(--mute)}
 summary{cursor:pointer}
-#upd{display:none;position:fixed;z-index:20;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 8px);background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 12px;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 4px 18px #0006}
+#upd{display:none;position:fixed;z-index:40;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 8px);background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 12px;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 4px 18px #0006}
 #upd button{border:0;border-radius:9px;padding:7px 12px;font:inherit;font-weight:700;background:var(--bg);color:var(--ink);cursor:pointer}
 </style>
 </head>
@@ -48,6 +61,8 @@ summary{cursor:pointer}
   <label class="btn">Load MIDI<input id="mid" type="file" accept=".mid,.midi,audio/midi"></label>
   <label class="btn">Backing track<input id="aud" type="file" accept="audio/*,video/*"></label>
   <button class="btn" id="midi">Connect drum kit</button>
+  <button class="btn" id="songs">Songs</button>
+  <button class="btn" id="prog">Progress</button>
   <span id="title">No song loaded</span>
 </div>
 <div class="bar" style="padding-top:2px">
@@ -55,6 +70,7 @@ summary{cursor:pointer}
   <button class="btn" id="restart">Restart</button>
   <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="hear" type="checkbox" style="display:inline;margin:0"> Play drums for me</label>
   <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="prac" type="checkbox" style="display:inline;margin:0"> Practice: wait for me</label>
+  <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="trn" type="checkbox" style="display:inline;margin:0"> Speed trainer</label>
 </div>
 <div class="row"><span>Tempo</span><input id="tempo" type="range" min="40" max="120" step="5" value="100"><b id="tempoV">100%</b></div>
 <div class="row"><span>Position</span><input id="seek" type="range" min="0" max="1000" value="0"><b id="pos">0:00</b></div>
@@ -69,6 +85,7 @@ summary{cursor:pointer}
 </div>
 <div class="row"><span>Loop gap</span><input id="gap" type="range" min="0" max="8" step="1" value="0"><b id="gapV" style="min-width:5em;white-space:nowrap">0 beats</b></div>
 <div id="stats"><span id="acc">–</span><span id="cmb"></span><span id="judge">Load a MIDI drum file to begin.</span></div>
+<div id="res"><div id="resCard"></div></div>
 <div id="staffWrap"><canvas id="staff"></canvas></div>
 <div id="stage">
   <canvas id="cv"></canvas>
@@ -77,6 +94,7 @@ summary{cursor:pointer}
 <div id="pads"></div>
 <details><summary>Settings</summary>
   <div class="row" style="padding:6px 0"><span>Input latency</span><input id="lat" type="range" min="-150" max="150" step="5" value="0"><b id="latV">0 ms</b></div>
+<div id="pstat" style="padding:4px 0"></div>
 <div class="row" style="padding:2px 0"><span>Version</span><b id="ver" style="min-width:0;text-align:left"></b></div>
 </details>
 
@@ -234,7 +252,7 @@ function updLoop(){
 }
 function reset(){
   notes.forEach(n=>{n.j=0;n.s=0;n.r=""});
-  score=jc=combo=bestCombo=misses=0;playing=false;fin=false;songTime=-lead();setNb(songTime);waiting=false;gapEnd=-Infinity;
+  score=jc=combo=bestCombo=misses=0;playing=false;fin=false;songTime=-lead();setNb(songTime);waiting=false;gapEnd=-Infinity;s0=j0=0;ls.forEach(q=>{q.n=q.s=q.a=q.m=0});
   if(audio){audio.pause();audio.currentTime=0}
   stat();
 }
@@ -252,7 +270,7 @@ function pause(){
   $("play").textContent="Play";
 }
 function finish(){
-  playing=false;fin=true;if(audio)audio.pause();
+  playing=false;fin=true;if(audio)audio.pause();showResults();
   $("play").textContent="Play";
   say(`Done – ${jc?Math.round(score/jc*100):0}% accuracy, ${misses} missed, best run ${bestCombo}`);
 }
@@ -267,6 +285,7 @@ function hit(l,ts){
   }
   if(!best){combo=0;stat();if(practice&&waiting){const w=[...new Set(notes.filter(n=>!n.j&&Math.abs(n.t-songTime)<.02).map(n=>L[n.l].n))];say("Waiting for "+w.join(" + "));return}say(L[l].n+" – no note there");return}
   const ms=Math.round((t-best.t)*1000),ad=Math.abs(ms);
+  if(!practice){const q=ls[l];q.n++;q.s+=ms;q.a+=ad}
   best.j=1;best.r="hit";jc++;combo++;if(combo>bestCombo)bestCombo=combo;
   let g;if(practice){score+=1;stat();say("Hit");return}
   if(ad<=45){score+=1;g="Perfect"}else if(ad<=90){score+=.7;g="Good · "+ad+" ms "+(ms<0?"early":"late")}
@@ -380,6 +399,97 @@ function drawStaff(){
   g.strokeStyle=C.hit;g.lineWidth=2;g.beginPath();g.moveTo(ph,3);g.lineTo(ph,H-3);g.stroke();
 }
 
+/* ---------- progress, results, saved songs ---------- */
+let songId="",songName="",baseBpm=120,s0=0,j0=0,tPlay=0,lastF=0;
+const ls=L.map(()=>({n:0,s:0,a:0,m:0}));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const jget=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
+const jset=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const dayKey=t=>{const d=new Date(t);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const bump=v=>{$("tempo").value=v;$("tempo").dispatchEvent(new Event("input"))};
+const panel=html=>{$("resCard").innerHTML=html;$("res").style.display="flex"};
+const closePanel=()=>{$("res").style.display="none"};
+$("res").addEventListener("pointerdown",e=>{if(e.target.id==="res")closePanel()});
+
+function bestText(){
+  const h=jget("sw_hist",{})[songId];
+  return h&&h.runs.length?" · best "+Math.max(...h.runs.map(r=>r.acc))+"%":"";
+}
+function saveRun(acc,miss){
+  const h=jget("sw_hist",{});
+  const e=h[songId]||(h[songId]={name:songName,runs:[]});
+  e.runs.push({d:Date.now(),acc,miss,tempo:Math.round(rate*100)});
+  if(e.runs.length>40)e.runs.shift();
+  jset("sw_hist",h);
+}
+function addTime(sec){
+  const t=jget("sw_time",{}),k=dayKey(Date.now());
+  t[k]=(t[k]||0)+sec;jset("sw_time",t);showStats();
+}
+function showStats(){
+  const t=jget("sw_time",{}),day=i=>t[dayKey(Date.now()-i*864e5)]||0;
+  let week=0;for(let i=0;i<7;i++)week+=day(i);
+  let i=day(0)>=60?0:1,streak=0;
+  while(i<400&&day(i)>=60){streak++;i++}
+  $("pstat").textContent=`Practice today ${Math.round(day(0)/60)} min · this week ${Math.round(week/60)} min · streak ${streak} day${streak===1?"":"s"}`;
+}
+function passDone(){
+  const dj=jc-j0;
+  if(dj>0&&!practice){
+    const a=(score-s0)/dj,pct=Math.round(a*100);
+    if($("trn").checked&&a>=.9&&Math.round(rate*100)<120){const v=Math.round(rate*100)+5;bump(v);say("Clean pass "+pct+"% – tempo up to "+v+"%")}
+    else say("Pass "+pct+"%");
+  }
+  s0=score;j0=jc;
+}
+function showResults(){
+  if(practice||!jc)return;
+  const acc=Math.round(score/jc*100);
+  let n=0,sm=0,sa=0;ls.forEach(q=>{n+=q.n;sm+=q.s;sa+=q.a});
+  const avg=n?Math.round(sm/n):0,err=n?Math.round(sa/n):0;
+  const trend=Math.abs(avg)<8?"Steady – you stay right on the beat.":(avg<0?`You tend to rush by about ${-avg} ms.`:`You tend to drag by about ${avg} ms.`);
+  let worst=-1,wv=0;
+  ls.forEach((q,i)=>{const tot=q.n+q.m;if(tot<3)return;const v=q.m/tot+(q.a/Math.max(q.n,1))/400;if(v>wv){wv=v;worst=i}});
+  const rows=ls.map((q,i)=>q.n+q.m?`<tr><td><i style="background:${L[i].c}"></i>${L[i].n}</td><td>${q.n}</td><td>${q.m}</td><td>${q.n?(q.s>0?"+":"")+Math.round(q.s/q.n)+" ms":"–"}</td></tr>`:"").join("");
+  saveRun(acc,misses);
+  let extra="";
+  if($("trn").checked&&acc>=90&&Math.round(rate*100)<120){const v=Math.round(rate*100)+5;bump(v);extra=`<p><b>Clean run – tempo raised to ${v}%.</b></p>`}
+  panel(`<h2>Run complete</h2><div class="big">${acc}%</div><p>Average timing error ${err} ms. ${trend}</p>${worst>=0?`<p>Needs the most work: <b>${L[worst].n}</b>.</p>`:""}${extra}<table><tr><th>Pad</th><th>Hit</th><th>Missed</th><th>Avg</th></tr>${rows}</table><div class="btns"><button class="btn main" id="rAgain">Play again</button><button class="btn" id="rClose">Close</button></div>`);
+  $("rClose").onclick=closePanel;
+  $("rAgain").onclick=()=>{closePanel();reset();play()};
+  $("title").textContent=songName+bestText();
+}
+function showProgress(){
+  const h=jget("sw_hist",{})[songId];
+  if(!h||!h.runs.length){
+    panel(`<h2>Progress</h2><p>No finished runs for this song yet. Finish a run (not in Practice mode) and it shows up here.</p><div class="btns"><button class="btn" id="rClose">Close</button></div>`);
+    $("rClose").onclick=closePanel;return;
+  }
+  const rows=h.runs.slice(-12).reverse().map(r=>`<tr><td>${new Date(r.d).toLocaleDateString(undefined,{day:"numeric",month:"short"})}</td><td>${r.tempo}%</td><td>${r.acc}%</td><td>${r.miss}</td></tr>`).join("");
+  const best=Math.max(...h.runs.map(r=>r.acc)),fast=Math.max(0,...h.runs.filter(r=>r.acc>=90).map(r=>r.tempo));
+  panel(`<h2>${esc(h.name)}</h2><p>${h.runs.length} runs · best ${best}%${fast?` · cleanest tempo ${fast}%`:""}</p><table><tr><th>Date</th><th>Tempo</th><th>Accuracy</th><th>Missed</th></tr>${rows}</table><div class="btns"><button class="btn" id="rClose">Close</button></div>`);
+  $("rClose").onclick=closePanel;
+}
+let dbp=null;
+function db(){return dbp||(dbp=new Promise((res,rej)=>{const q=indexedDB.open("stickwork",1);q.onupgradeneeded=()=>q.result.createObjectStore("songs",{keyPath:"name"});q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}))}
+async function saveSong(name,buf,id){try{const d=await db();d.transaction("songs","readwrite").objectStore("songs").put({name,buf,id,at:Date.now()})}catch(e){}}
+async function listSongs(){try{const d=await db();return await new Promise((res,rej)=>{const q=d.transaction("songs").objectStore("songs").getAll();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}catch(e){return[]}}
+async function delSong(name){try{const d=await db();d.transaction("songs","readwrite").objectStore("songs").delete(name)}catch(e){}}
+async function showSongs(){
+  const list=(await listSongs()).sort((a,b)=>b.at-a.at),hist=jget("sw_hist",{});
+  const rows=list.map((s,i)=>{
+    const h=hist[s.id],best=h&&h.runs.length?"best "+Math.max(...h.runs.map(r=>r.acc))+"%":"";
+    return `<div class="srow"><button class="btn" data-o="${i}">${esc(s.name)}</button><span>${best}</span><button class="btn" data-d="${i}">Delete</button></div>`;
+  }).join("");
+  panel(`<h2>Saved songs</h2>${rows||"<p>Nothing saved yet. Every MIDI file you load is kept here automatically.</p>"}<div class="btns"><button class="btn" id="rClose">Close</button></div>`);
+  $("rClose").onclick=closePanel;
+  document.querySelectorAll("#resCard [data-o]").forEach(b=>b.onclick=()=>{
+    const s=list[+b.dataset.o];closePanel();
+    $("mid").onchange({target:{files:[new File([s.buf],s.name)],value:""}});
+  });
+  document.querySelectorAll("#resCard [data-d]").forEach(b=>b.onclick=async()=>{await delSong(list[+b.dataset.d].name);showSongs()});
+}
+
 function frame(){
   requestAnimationFrame(frame);
   if(playing){
@@ -390,14 +500,18 @@ function frame(){
       if(w){songTime=w.t;startSong=songTime;startWall=performance.now();waiting=true;if(audio)audio.pause()}else waiting=false;
     }else waiting=false;
     if(audio&&!practice&&audio.paused&&!audio.ended&&songTime>=0){audio.currentTime=songTime;audio.play().catch(()=>{})}
+    const nowT=performance.now();
+    if(lastF&&nowT-lastF<200)tPlay+=nowT-lastF;
+    lastF=nowT;
+    if(tPlay>15000){addTime(tPlay/1000);tPlay=0}
     const hear=$("hear").checked;
     for(const n of notes){
       if(n.t>songTime+0.2)break;
-      if(!practice&&!n.j&&n.t<songTime-0.15){n.j=1;n.r="miss";jc++;misses++;combo=0;stat()}
+      if(!practice&&!n.j&&n.t<songTime-0.15){n.j=1;n.r="miss";jc++;misses++;combo=0;ls[n.l].m++;stat()}
       if(hear&&!n.s&&n.t<=songTime){n.s=1;snd(n.l);flash[n.l]=1}
     }
     if(loopOn&&loopA!=null&&loopB!=null&&loopB>loopA+.2&&songTime>=loopB){
-      const g=gapBeats*bd;
+      passDone();const g=gapBeats*bd;
       seekTo(loopA-g,loopA);
       if(g>0)gapEnd=loopA;
     }
@@ -458,12 +572,14 @@ $("midi").onclick=async()=>{
 $("mid").onchange=async e=>{
   const f=e.target.files[0];if(!f)return;
   try{
-    const r=parseMidi(await f.arrayBuffer());
+    const buf=await f.arrayBuffer();const r=parseMidi(buf);
     if(!r.notes.length)throw new Error("no drum notes found");
     notes=r.notes;endT=notes[notes.length-1].t+1.5;
     beats=r.beats;tsNum=r.tsNum;bd=beats.length>1?beats[1]-beats[0]:.5;
     loopA=loopB=null;loopOn=false;updLoop();
-    $("title").textContent=f.name;$("empty").style.display="none";
+    songId=f.name+"|"+notes.length;songName=f.name;saveSong(f.name,buf,songId);
+    baseBpm=r.bpm;$("tempo").dispatchEvent(new Event("input"));
+    $("title").textContent=f.name+bestText();$("empty").style.display="none";
     reset();$("play").textContent="Play";
     say(`${notes.length} notes · ${r.bpm} BPM`+(r.usedAll?" · no drum channel, used all notes":""));
   }catch(err){say("Could not read that file: "+err.message)}
@@ -480,7 +596,7 @@ $("aud").onchange=e=>{
 $("play").onclick=()=>playing?pause():play();
 $("restart").onclick=()=>{reset();$("play").textContent="Play"};
 $("tempo").oninput=e=>{
-  const v=+e.target.value;$("tempoV").textContent=v+"%";
+  const v=+e.target.value;$("tempoV").textContent=v+"% · "+Math.round(baseBpm*v/100)+" BPM";
   if(playing){songTime=cur();startSong=songTime;startWall=performance.now()}
   rate=v/100;if(audio)audio.playbackRate=rate;
 };
@@ -527,10 +643,15 @@ function applyStaff(){
 }
 applyStaff();
 
+$("songs").onclick=showSongs;
+$("prog").onclick=showProgress;
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&tPlay>2000){addTime(tPlay/1000);tPlay=0}});
+showStats();
+
 songTime=-2;resize();requestAnimationFrame(frame);
 </script>
 <script>
-const APP_VERSION="1.1.0";
+const APP_VERSION="1.2.0";
 document.getElementById("ver").textContent="v"+APP_VERSION;
 try{
   const prev=localStorage.getItem("sw_ver");
