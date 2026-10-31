@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+<!-- Stickwork v1.7.1 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Stickwork – drum practice</title>
@@ -9,17 +10,31 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#161824">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="Stickwork: practice drum grooves with an e-drum kit, a touch screen or a keyboard.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;700&display=swap">
 <style>
 :root{--bg:#f1efe9;--panel:#fff;--ink:#1d1f2b;--mute:#6b6f80;--line:#d9d5ca;--stage:#e7e3d8;--band:#00000008;--hit:#1d1f2b;
 box-sizing:border-box;background:var(--bg);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161824;--panel:#232637;--ink:#ebe8e0;--mute:#9a9eb2;--line:#33374c;--stage:#1b1e2d;--band:#ffffff08;--hit:#ffffff}}
 :root[data-theme="dark"]{--bg:#161824;--panel:#232637;--ink:#ebe8e0;--mute:#9a9eb2;--line:#33374c;--stage:#1b1e2d;--band:#ffffff08;--hit:#ffffff}
-html,body{height:100%;margin:0}
-body{display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font:500 15px/1.3 "Barlow Semi Condensed",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-user-select:none;user-select:none}
+html,body{height:100%;margin:0;overscroll-behavior:none}
+body{display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font:500 15px/1.3 "Barlow Semi Condensed",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-user-select:none;user-select:none;touch-action:manipulation}
 .bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px 10px 4px}
-.btn{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer}
+.btn{box-sizing:border-box;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer}
 .btn.main{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #3d7bff;outline-offset:2px}
+@media (pointer:coarse){.btn{min-height:44px}}
+#tools{display:none}#tools.open{display:block}
+body.perf #tools{display:none}
+@media (max-height:760px){#staffWrap{height:104px}}
+@media (max-height:680px){#staffWrap{height:84px}}
+@media (max-width:600px){.bar.scroll{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.bar.scroll .btn{flex:none;white-space:nowrap}.bar.scroll #title{display:none}}
+#empty>div{max-width:520px}
+#empty .btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px;pointer-events:auto}
+#empty p{margin:0 0 6px}
+#resCard ol{margin:6px 0;padding-left:20px}#resCard ol li{margin:6px 0}
+#resCard h3{margin:14px 0 4px;font-size:16px}
+#resCard kbd{background:var(--stage);border:1px solid var(--line);border-radius:5px;padding:0 5px;font:inherit;font-weight:700}
 input[type=file]{display:none}
 #title{flex:1;min-width:80px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
 .row{display:flex;gap:10px;align-items:center;padding:2px 10px;color:var(--mute)}
@@ -30,7 +45,7 @@ input[type=file]{display:none}
 #judge{color:var(--mute);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #stage{flex:1;min-height:0;position:relative;margin:0 8px;border-radius:12px;overflow:hidden;background:var(--stage)}
 canvas{width:100%;height:100%;display:block;touch-action:none}
-#staffWrap{flex:none;height:112px;margin:0 8px 6px;border-radius:12px;overflow:hidden;background:var(--stage)}
+#staffWrap{flex:none;height:140px;margin:0 8px 6px;border-radius:12px;overflow:hidden;background:var(--stage)}
 #staffWrap.off{display:none}
 #res{display:none;position:fixed;inset:0;z-index:30;background:#0008;align-items:center;justify-content:center;padding:16px}
 #resCard{background:var(--panel);color:var(--ink);border-radius:16px;padding:18px;max-width:460px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 8px 30px #0008;-webkit-user-select:text;user-select:text}
@@ -55,7 +70,9 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 body.perf .bar,body.perf .row,body.perf #stats,body.perf #staffWrap,body.perf details{display:none}
 body.perf #perfBar{display:flex}
 #empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--mute);pointer-events:none;line-height:1.5}
-#pads{display:grid;grid-template-columns:repeat(13,1fr);gap:3px;padding:6px 8px 8px}
+#pads{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:3px;padding:6px 8px 8px}
+.pad .s{display:none}
+@media (max-width:600px){#pads .pad .f{display:none}#pads .pad .s{display:inline}#pads .pad{font-size:10px;letter-spacing:-.2px}#pads{gap:2px;padding:6px 6px 8px}}
 .pad{height:68px;border:0;border-radius:9px;padding:0;line-height:1.1;color:#14151d;font:700 11px "Barlow Semi Condensed",system-ui,sans-serif;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .pad:active{filter:brightness(.8);transform:scale(.97)}
 details{padding:0 10px 2px;color:var(--mute)}
@@ -65,15 +82,16 @@ summary{cursor:pointer}
 </style>
 </head>
 <body>
-<div id="upd"><span>A new version of Stickwork is ready.</span><button id="updBtn">Update</button></div>
-<div class="bar">
-  <label class="btn">Load MIDI<input id="mid" type="file" accept=".mid,.midi,audio/midi"></label>
-  <label class="btn">Backing track<input id="aud" type="file" accept="audio/*,video/*"></label>
-  <button class="btn" id="midi">Connect drum kit</button>
-  <button class="btn" id="songs">Songs</button>
-  <button class="btn" id="prog">Progress</button>
-  <button class="btn" id="lessonsB">Lessons</button>
+<div id="upd" role="status"><span>A new version of Stickwork is ready.</span><button id="updBtn">Update</button></div>
+<div class="bar scroll">
+  <button class="btn main" id="lessonsB">Lessons</button>
+  <button class="btn" id="workB">Daily workout</button>
+  <button class="btn" id="freeB">Free play</button>
   <button class="btn" id="perfB">Performance</button>
+  <button class="btn" id="midi">Connect drum kit</button>
+  <button class="btn" id="prog">Progress</button>
+  <button class="btn" id="toolsB" aria-expanded="false" aria-controls="tools">Tools ▾</button>
+  <button class="btn" id="helpB" aria-label="Help and quick start">?</button>
   <span id="title">No song loaded</span>
 </div>
 <div class="bar" style="padding-top:2px">
@@ -81,39 +99,55 @@ summary{cursor:pointer}
   <button class="btn" id="restart">Restart</button>
   <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="hear" type="checkbox" style="display:inline;margin:0"> Play drums for me</label>
   <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="prac" type="checkbox" style="display:inline;margin:0"> Practice: wait for me</label>
-  <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="trn" type="checkbox" style="display:inline;margin:0"> Speed trainer</label>
-  <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="bkOn" type="checkbox" checked style="display:inline;margin:0"> Backing music</label>
 </div>
-<div class="row"><span>Tempo</span><input id="tempo" type="range" min="40" max="120" step="5" value="100"><b id="tempoV">100%</b></div>
-<div class="row"><span>Position</span><input id="seek" type="range" min="0" max="1000" value="0"><b id="pos">0:00</b></div>
-<div class="bar" style="padding-top:4px">
-  <button class="btn" id="setA">Set A</button>
-  <button class="btn" id="setB">Set B</button>
-  <button class="btn" id="loopT">Loop: off</button>
-  <button class="btn" id="clrL">Clear</button>
-  <button class="btn" id="staffT">Staff: on</button>
-  <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="met" type="checkbox" style="display:inline;margin:0"> Metronome</label>
-  <span id="loopInfo" style="color:var(--mute)"></span>
+<div class="row"><span>Tempo</span><input id="tempo" type="range" min="40" max="120" step="5" value="100" aria-label="Tempo percent"><b id="tempoV">100%</b></div>
+<div id="tools">
+  <div class="bar" style="padding-top:2px">
+    <label class="btn">Load MIDI<input id="mid" type="file" accept=".mid,.midi,audio/midi"></label>
+    <label class="btn">Backing track<input id="aud" type="file" accept="audio/*,video/*"></label>
+    <button class="btn" id="songs">Songs</button>
+    <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="trn" type="checkbox" style="display:inline;margin:0"> Speed trainer</label>
+    <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="bkOn" type="checkbox" checked style="display:inline;margin:0"> Backing music</label>
+  </div>
+  <div class="row"><span>Position</span><input id="seek" type="range" min="0" max="1000" value="0" aria-label="Song position"><b id="pos">0:00</b></div>
+  <div class="bar" style="padding-top:4px">
+    <button class="btn" id="setA">Set A</button>
+    <button class="btn" id="setB">Set B</button>
+    <button class="btn" id="loopT">Loop: off</button>
+    <button class="btn" id="clrL">Clear</button>
+    <span style="display:flex;gap:4px;align-items:center;color:var(--mute)">Bars <input id="lbA" type="number" min="1" value="1" style="width:3.4em"> to <input id="lbB" type="number" min="1" value="2" style="width:3.4em"> <button class="btn" id="lbGo">Loop</button></span>
+    <button class="btn" id="staffT">Staff: on</button>
+    <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="met" type="checkbox" style="display:inline;margin:0"> Metronome</label>
+    <span id="loopInfo" style="color:var(--mute)"></span>
+  </div>
+  <div class="row"><span>Loop gap</span><input id="gap" type="range" min="0" max="8" step="1" value="0" aria-label="Rest between loops in beats"><b id="gapV" style="min-width:5em;white-space:nowrap">0 beats</b></div>
 </div>
-<div class="row"><span>Loop gap</span><input id="gap" type="range" min="0" max="8" step="1" value="0"><b id="gapV" style="min-width:5em;white-space:nowrap">0 beats</b></div>
-<div id="stats"><span id="acc">–</span><span id="cmb"></span><span id="judge">Load a MIDI drum file to begin.</span></div>
+<div id="stats"><span id="acc"></span><span id="cmb"></span><span id="judge" aria-live="polite">Pick a lesson to begin.</span></div>
 <div id="perfBar"><button class="btn main" id="perfGo">Start</button><span id="perfHud">–</span><button class="btn" id="perfExit">Exit</button></div>
 <div id="res"><div id="resCard"></div></div>
 <div id="staffWrap"><canvas id="staff"></canvas></div>
 <div id="stage">
   <canvas id="cv"></canvas>
-  <div id="empty">Tap <b>Lessons</b> for built-in practice, or load a drum MIDI file.<br>Tap the pads, press the keyboard keys Q A S Z D X F G H J K L and Space, or connect an e-drum kit over USB.</div>
+  <div id="empty"><div>
+    <p style="font-size:18px;color:var(--ink);font-weight:700">Ready to play some drums?</p>
+    <p>Start with a built-in lesson, or load your own drum MIDI file from Tools.</p>
+    <p>Play with an e-drum kit, the pads below, or your keyboard.</p>
+    <div class="btns"><button class="btn main" id="emptyGo">Start a lesson</button><button class="btn" id="emptyHelp">How it works</button></div>
+  </div></div>
 </div>
 <div id="pads"></div>
 <details><summary>Settings</summary>
   <div class="row" style="padding:6px 0"><span>Input latency</span><input id="lat" type="range" min="-400" max="400" step="5" value="0"><b id="latV">0 ms</b></div>
 <div class="row" style="padding:6px 0"><span>Click</span><select id="subSel" class="btn"><option value="1">Beats</option><option value="2">Eighths</option><option value="4">Sixteenths</option></select></div>
 <div style="padding:4px 0"><div style="margin-bottom:4px">Focus on these pads (the app plays the others for you):</div><div id="focusRow" class="chips"></div></div>
+<div class="row" style="padding:6px 0"><span>Count-in</span><select id="cntSel" class="btn"><option value="0">None</option><option value="1">1 bar</option><option value="2">2 bars</option></select></div>
 <div class="row" style="padding:6px 0"><span>Timing</span><select id="winSel" class="btn"><option value="0">Easy</option><option value="1">Normal</option><option value="2">Strict</option></select><button class="btn" id="calB">Calibrate hits</button></div>
 <div class="row" style="padding:6px 0"><span>Audio delay</span><input id="audD" type="range" min="0" max="600" step="10" value="0"><b id="audV" style="min-width:4.5em">0 ms</b></div>
 <div style="color:var(--mute);font-size:13px;padding:0 0 6px">Bluetooth headphones add roughly 200 to 400 ms. Raise this until the click you hear lines up with the notes.</div>
+<label style="display:flex;gap:6px;align-items:center;padding:4px 0"><input id="stickChk" type="checkbox" checked> Show R/L sticking hints on lessons</label>
 <label style="display:flex;gap:6px;align-items:center;padding:4px 0"><input id="padSnd" type="checkbox"> Also play the app’s drum sounds when I hit the kit</label>
 <div id="mdiag" style="padding:2px 0;color:var(--mute)">MIDI clock offset: –</div>
+<div style="padding:6px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" id="newsB">What’s new</button><button class="btn" id="expB">Export progress</button><label class="btn">Import progress<input id="impF" type="file" accept=".json,application/json"></label></div>
 <div id="pstat" style="padding:4px 0"></div>
 <div class="row" style="padding:2px 0"><span>Version</span><b id="ver" style="min-width:0;text-align:left"></b></div>
 </details>
@@ -133,7 +167,7 @@ const L=[
 {n:"Tom 4",k:"j",c:"#ff8fd8",m:[41],d:[41,39]},
 {n:"Crash 2",k:"k",c:"#c9e265",m:[57],d:[57]},
 {n:"Ride",k:"l",c:"#ff9f45",m:[51,59,53],d:[51,53,59]},
-{n:"Kick",k:" ",c:"#d8d2c0",m:[35,36],d:[36,35]}];
+{n:"Kick",k:" ",c:"#b08968",m:[35,36],d:[36,35]}];
 /* m = General MIDI notes used when reading song files; d = Alesis Nitro Max default pad notes used for kit input */
 const noteLane={},kitLane={};
 L.forEach((l,i)=>{l.m.forEach(n=>noteLane[n]=i);l.d.forEach(n=>kitLane[n]=i)});
@@ -142,7 +176,10 @@ let notes=[],endT=0,playing=false,fin=false,songTime=0,startWall=0,startSong=0,r
 let score=0,jc=0,combo=0,bestCombo=0,misses=0,ac=null,audio=null;
 let loopA=null,loopB=null,loopOn=false,beats=[],tsNum=4,bd=.5,nb=0,seeking=false;
 let practice=false,waiting=false,gapBeats=0,gapEnd=-Infinity;
+const SHORT=["Cr1","Hat","Open","Ped","Snr","Rim","T1","T2","T3","T4","Cr2","Rde","Kick"];
 const flash=new Array(L.length).fill(0);
+const fbs=[];
+function fbSet(l,s,c){fbs.push({l,s,c,t:performance.now()});if(fbs.length>8)fbs.shift()}
 try{lat=+localStorage.getItem("sw_lat")||0;$("lat").value=lat;$("latV").textContent=lat+" ms"}catch(e){}
 
 /* ---------- MIDI parsing ---------- */
@@ -231,13 +268,13 @@ function snd(l,dly=0){
 /* ---------- game logic ---------- */
 function cur(){return playing?startSong+(performance.now()-startWall)/1000*rate:songTime}
 function stat(){
-  $("acc").textContent=jc?Math.round(score/jc*100)+"%":"–";
+  $("acc").textContent=jc?Math.round(score/jc*100)+"%":"";
   $("cmb").textContent=combo>1?combo+" in a row":"";
   $("perfHud").textContent=(jc?Math.round(score/jc*100)+"%":"–")+(combo>1?"  ×"+combo:"");
 }
 function say(t){$("judge").textContent=t}
 const fmt=t=>{t=Math.max(0,t);return Math.floor(t/60)+":"+String(Math.floor(t%60)).padStart(2,"0")};
-const lead=()=>bd*tsNum;
+const lead=()=>bd*tsNum*countBars;
 const beatT=i=>i<0?i*bd:(i<beats.length?beats[i]:Infinity);
 function setNb(t){
   if(t<0){nb=-Math.floor(-t/bd+1e-6);bi=0;return}
@@ -273,7 +310,7 @@ function updLoop(){
 }
 function reset(){
   notes.forEach(n=>{n.j=focus[n.l]?0:1;n.s=0;n.r=focus[n.l]?"":"skip"});
-  score=jc=combo=bestCombo=misses=0;playing=false;fin=false;songTime=-lead();setNb(songTime);waiting=false;gapEnd=-Infinity;s0=j0=0;ls.forEach(q=>{q.n=q.s=q.a=q.m=0});missT.length=0;
+  score=jc=combo=bestCombo=misses=0;heard=false;playing=false;fin=false;songTime=-lead();setNb(songTime);waiting=false;gapEnd=-Infinity;s0=j0=0;ls.forEach(q=>{q.n=q.s=q.a=q.m=0});missT.length=0;offL.length=0;
   if(audio){audio.pause();audio.currentTime=0}
   stat();
 }
@@ -284,19 +321,19 @@ function play(){
   if(songTime<=0)songTime=-lead();
   setNb(songTime);
   playing=true;startWall=performance.now();startSong=songTime;
-  $("play").textContent="Pause";
+  $("play").textContent="Pause";wake(true);
 }
 function pause(){
-  songTime=cur();playing=false;waiting=false;if(audio)audio.pause();
+  songTime=cur();playing=false;waiting=false;wake(false);if(audio)audio.pause();
   $("play").textContent="Play";
 }
 function finish(){
-  playing=false;fin=true;if(audio)audio.pause();$("perfGo").textContent="Start";showResults();
+  playing=false;fin=true;if(audio)audio.pause();$("perfGo").textContent="Start";wake(false);showResults();
   $("play").textContent="Play";
-  say(`Done – ${jc?Math.round(score/jc*100):0}% accuracy, ${misses} missed, best run ${bestCombo}`);
+  say(heard?"Listen-through done – not counted in your progress":`Done – ${jc?Math.round(score/jc*100):0}% accuracy, ${misses} missed, best run ${bestCombo}`);
 }
 function hit(l,ts,kit){
-  initAudio();if(!kit||soundAll)snd(l);flash[l]=1;if(calib){calib.hit(ts);return}
+  initAudio();if(!kit||soundAll)snd(l);flash[l]=1;if(calib){calib.hit(ts);return}if(free)return;
   if(!playing||songTime<-0.15)return;
   let t=startSong+((ts-lat)-startWall)/1000*rate;
   if(!isFinite(t)||Math.abs(t-songTime)>.3)t=songTime;
@@ -317,19 +354,20 @@ function hit(l,ts,kit){
   }
   if(!best){combo=0;stat();if(practice&&waiting){const w=[...new Set(notes.filter(n=>!n.j&&Math.abs(n.t-songTime)<.02).map(n=>L[n.l].n))];say("Waiting for "+w.join(" + "));return}say(L[l].n+" – no note there");return}
   const ms=Math.round((t-best.t)*1000),ad=Math.abs(ms);
-  if(!practice){const q=ls[l];q.n++;q.s+=ms;q.a+=ad}
+  if(!practice){const q=ls[l];q.n++;q.s+=ms;q.a+=ad;offL.push(ms)}
   best.j=1;best.r="hit";jc++;combo++;if(combo>bestCombo)bestCombo=combo;
   let g;if(practice){score+=1;stat();say("Hit");return}
   if(ad<=win[0]*1000){score+=1;g="Perfect"}else if(ad<=win[1]*1000){score+=.7;g="Good · "+ad+" ms "+(ms<0?"early":"late")}
   else{score+=.4;g="Off · "+ad+" ms "+(ms<0?"early":"late")}
   say(g);stat();
+  fbSet(l,ad<=win[0]*1000?"Perfect":(ms<0?"Early":"Late"),ad<=win[0]*1000?"#19a463":ad<=win[1]*1000?"#d98a00":"#d64550");
 }
 
 /* ---------- drawing ---------- */
 const cv=$("cv"),ctx=cv.getContext("2d");let C={};
 function colors(){
   const s=getComputedStyle(document.documentElement);
-  for(const k of ["mute","line","band","hit","ink"])C[k]=s.getPropertyValue("--"+k).trim();
+  for(const k of ["mute","line","band","hit","ink","stage"])C[k]=s.getPropertyValue("--"+k).trim();
 }
 function resize(){
   const dpr=window.devicePixelRatio||1;
@@ -355,7 +393,7 @@ function draw(){
     if(i%2){ctx.fillStyle=C.band;ctx.fillRect(i*lw,0,lw,H)}
     if(flash[i]>.02){ctx.globalAlpha=flash[i]*.35;ctx.fillStyle=L[i].c;ctx.fillRect(i*lw,0,lw,H);ctx.globalAlpha=1;flash[i]*=.86}
     ctx.fillStyle=C.mute;ctx.font='700 '+Math.max(7,Math.min(10,Math.floor(lw/4.4)))+'px "Barlow Semi Condensed",system-ui,sans-serif';ctx.textAlign="center";
-    ctx.fillText(L[i].n.replace("Crash ","Cr "),i*lw+lw/2,14);
+    ctx.fillText(lw<50?SHORT[i]:L[i].n,i*lw+lw/2,14);
   }
   ctx.strokeStyle=C.line;ctx.lineWidth=1;
   for(let i=1;i<L.length;i++){ctx.beginPath();ctx.moveTo(i*lw,0);ctx.lineTo(i*lw,H);ctx.stroke()}
@@ -366,7 +404,7 @@ function draw(){
     ctx.globalAlpha=n.r==="miss"?.25:1;ctx.fillStyle=L[n.l].c;
     ctx.beginPath();
     if(ctx.roundRect)ctx.roundRect(n.l*lw+4,y-8,lw-8,16,6);else ctx.rect(n.l*lw+4,y-8,lw-8,16);
-    ctx.fill();if(waiting&&!n.j&&Math.abs(n.t-songTime)<.001){ctx.strokeStyle=C.ink;ctx.lineWidth=3;ctx.stroke()}ctx.globalAlpha=1;
+    ctx.fill();if(waiting&&!n.j&&Math.abs(n.t-songTime)<.001){ctx.strokeStyle=C.ink;ctx.lineWidth=3;ctx.stroke()}if(stickOn&&n.h){ctx.fillStyle="#14151d";ctx.font="700 11px sans-serif";ctx.textAlign="center";ctx.fillText(n.h,n.l*lw+lw/2,y+4)}ctx.globalAlpha=1;
   }
   for(const [lt,lb] of [[loopA,"A"],[loopB,"B"]]){
     if(lt==null)continue;
@@ -378,6 +416,14 @@ function draw(){
     ctx.font='700 13px "Barlow Semi Condensed",system-ui,sans-serif';ctx.fillText(lb,6,ly-5);ctx.textAlign="center";
   }
   ctx.strokeStyle=C.hit;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,hy);ctx.lineTo(W,hy);ctx.stroke();
+  const nowF=performance.now();
+  for(let q=fbs.length-1;q>=0;q--){
+    const f=fbs[q],a=1-(nowF-f.t)/800;
+    if(a<=0){fbs.splice(q,1);continue}
+    ctx.globalAlpha=a;ctx.font='700 15px "Barlow Semi Condensed",system-ui,sans-serif';ctx.textAlign="center";
+    const fx=Math.min(W-26,Math.max(26,f.l*lw+lw/2)),fy=hy-30-(1-a)*18;
+    ctx.lineWidth=4;ctx.strokeStyle=C.stage;ctx.strokeText(f.s,fx,fy);ctx.fillStyle=f.c;ctx.fillText(f.s,fx,fy);ctx.globalAlpha=1;
+  }
   if(playing&&(songTime<0||songTime<gapEnd)){
     ctx.fillStyle=C.ink;ctx.font='700 64px "Barlow Semi Condensed",system-ui,sans-serif';
     ctx.fillText(Math.ceil((songTime<gapEnd?gapEnd-songTime:-songTime)/bd-1e-6),W/2,H*.4);
@@ -391,7 +437,8 @@ const OPENH=2;
 function drawStaff(){
   if(!staffOn)return;
   const W=sv.clientWidth,H=sv.clientHeight;if(!W||!H)return;
-  const g=sctx,sp=Math.min(12,(H-14)/7.4),yB=H/2+2.75*sp,Y=s=>yB-s*sp/2;
+  const g=sctx,sp=Math.min(11,(H-8)/12.5),yB=H/2+2.5*sp,Y=s=>yB-s*sp/2;
+  if(stf.src!==notes)buildStaff();
   const clefW=44,ph=Math.max(clefW+24,W*.25),sx=(W-ph)/(4*bd);
   g.clearRect(0,0,W,H);
   g.strokeStyle=C.mute;g.lineWidth=1;g.globalAlpha=.8;
@@ -405,6 +452,7 @@ function drawStaff(){
     g.beginPath();g.moveTo(x,bar?Y(8):Y(9.5));g.lineTo(x,bar?Y(0):Y(-.5));g.stroke();
   });
   g.globalAlpha=1;
+  drawStems(g,ph,sx,sp,Y,W,clefW);
   for(const n of notes){
     const x=ph+(n.t-songTime)*sx;
     if(x>W+14)break;
@@ -422,6 +470,7 @@ function drawStaff(){
       g.beginPath();g.ellipse(x,y,sp*.66,sp*.48,-.35,0,6.2832);
       g.fillStyle=L[n.l].c;g.fill();g.strokeStyle=C.ink;g.lineWidth=1.3;g.stroke();
     }
+    if(stickOn&&n.h){g.fillStyle=C.ink;g.font="700 "+Math.round(sp*.9)+"px sans-serif";g.textAlign="center";g.fillText(n.h,x,Y(n.h==="R"?-3.2:-5.2))}
     if(waiting&&!n.j&&Math.abs(n.t-songTime)<.001){
       g.globalAlpha=1;g.strokeStyle=C.ink;g.lineWidth=2.5;g.beginPath();g.arc(x,y,sp*.95,0,6.2832);g.stroke();
     }
@@ -432,14 +481,14 @@ function drawStaff(){
 }
 
 /* ---------- progress, results, saved songs ---------- */
-let songId="",songName="",baseBpm=120,s0=0,j0=0,tPlay=0,lastF=0;
+let songId="",songName="",baseBpm=120,s0=0,j0=0,tPlay=0,lastF=0,heard=false;
 const ls=L.map(()=>({n:0,s:0,a:0,m:0}));
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const jget=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
 const jset=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 const dayKey=t=>{const d=new Date(t);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 const bump=v=>{$("tempo").value=v;$("tempo").dispatchEvent(new Event("input"))};
-const panel=html=>{$("resCard").innerHTML=html;$("res").style.display="flex"};
+const panel=html=>{if(playing)pause();$("resCard").innerHTML=html;$("res").style.display="flex"};
 const closePanel=()=>{$("res").style.display="none";calib=null};
 $("res").addEventListener("pointerdown",e=>{if(e.target.id==="res")closePanel()});
 
@@ -467,15 +516,31 @@ function showStats(){
 }
 function passDone(){
   const dj=jc-j0;
-  if(dj>0&&!practice){
+  if(dj>0&&!practice&&!heard){
     const a=(score-s0)/dj,pct=Math.round(a*100);
-    if($("trn").checked&&a>=.9&&Math.round(rate*100)<120){const v=Math.round(rate*100)+5;bump(v);say("Clean pass "+pct+"% – tempo up to "+v+"%")}
+    if($("trn").checked&&!heard&&a>=.9&&Math.round(rate*100)<120){const v=Math.round(rate*100)+5;bump(v);say("Clean pass "+pct+"% – tempo up to "+v+"%")}
     else say("Pass "+pct+"%");
   }
   s0=score;j0=jc;
 }
 function showResults(){
-  if(practice||!jc)return;
+  if(heard){
+    panel(`<h2>Listen-through finished</h2><p>The app played the drums for you, so this run is <b>not counted</b> in your progress, accuracy or practice time.</p><p>When you have heard how it goes, switch off "Play drums for me" and play it yourself.</p><div class="btns"><button class="btn main" id="hYou">Now I play it</button><button class="btn" id="hAgain">Listen again</button><button class="btn" id="rClose">Close</button></div>`);
+    $("rClose").onclick=closePanel;
+    $("hAgain").onclick=()=>{closePanel();reset();play()};
+    $("hYou").onclick=()=>{closePanel();$("hear").checked=false;reset();play()};
+    return;
+  }
+  if(practice){
+    if(jc){
+      panel(`<h2>Practice run complete</h2><p>You played all ${jc} notes at your own pace. Nicely done.</p><p>When it feels comfortable, switch off "wait for me" and play it to the click. That is the real test.</p><div class="btns"><button class="btn main" id="pReal">Try it at full speed</button><button class="btn" id="pAgain">Practice again</button><button class="btn" id="rClose">Close</button></div>`);
+      $("rClose").onclick=closePanel;
+      $("pAgain").onclick=()=>{closePanel();reset();play()};
+      $("pReal").onclick=()=>{closePanel();practice=false;$("prac").checked=false;reset();play()};
+    }
+    return;
+  }
+  if(!jc)return;
   const acc=Math.round(score/jc*100);
   let n=0,sm=0,sa=0;ls.forEach(q=>{n+=q.n;sm+=q.s;sa+=q.a});
   const avg=n?Math.round(sm/n):0,err=n?Math.round(sa/n):0;
@@ -487,10 +552,13 @@ function showResults(){
   saveRun(acc,misses);
   const st=acc>=95?5:acc>=90?4:acc>=80?3:acc>=65?2:1;
   let extra="";
+  const nxtL=(!wq&&!perf&&!free&&songId.startsWith("lesson:")&&acc>=80)?nextLesson():null;
   if($("trn").checked&&acc>=90&&Math.round(rate*100)<120){const v=Math.round(rate*100)+5;bump(v);extra=`<p><b>Clean run – tempo raised to ${v}%.</b></p>`}
-  panel(`<h2>${perf?"Performance complete":"Run complete"}</h2>${perf?`<div class="stars">${"★".repeat(st)}${"☆".repeat(5-st)}</div>`:""}<div class="big">${acc}%</div><p>Average timing error ${err} ms. ${trend}</p>${worst>=0?`<p>Needs the most work: <b>${L[worst].n}</b>.</p>`:""}${extra}<ul>${c.tips.map(t=>`<li>${t}</li>`).join("")}</ul><table><tr><th>Pad</th><th>Hit</th><th>Missed</th><th>Avg</th></tr>${rows}</table><div class="btns">${c.hardBar?`<button class="btn" id="rLoop">Loop bar ${c.hardBar}</button>`:""}<button class="btn main" id="rAgain">Play again</button><button class="btn" id="rClose">Close</button></div>`);
+  panel(`<h2>${perf?"Performance complete":"Run complete"}</h2>${perf?`<div class="stars">${"★".repeat(st)}${"☆".repeat(5-st)}</div>`:""}<div class="big">${acc}%</div><p>Average timing error ${err} ms. ${trend}</p>${histSvg()}${worst>=0?`<p>Needs the most work: <b>${L[worst].n}</b>.</p>`:""}${extra}<ul>${c.tips.map(t=>`<li>${t}</li>`).join("")}</ul><table><tr><th>Pad</th><th>Hit</th><th>Missed</th><th>Avg</th></tr>${rows}</table><div class="btns">${c.hardBar?`<button class="btn" id="rLoop">Loop bar ${c.hardBar}</button>`:""}${wq&&wi<wq.length-1?`<button class="btn main" id="rNext">Next lesson</button>`:""}${nxtL?`<button class="btn main" id="rNL">Next: ${esc(nxtL.n)}</button>`:""}<button class="btn${(wq&&wi<wq.length-1)||nxtL?"":" main"}" id="rAgain">Play again</button><button class="btn" id="rClose">Close</button></div>`);
   $("rClose").onclick=closePanel;
   $("rAgain").onclick=()=>{closePanel();reset();play()};
+  if(nxtL)$("rNL").onclick=()=>{closePanel();openLesson(nxtL)};
+  if(wq&&wi<wq.length-1)$("rNext").onclick=()=>{wi++;closePanel();openLesson(wq[wi],2);play()};
   if(c.hardBar)$("rLoop").onclick=()=>{
     loopA=beats[(c.hardBar-1)*tsNum];loopB=beats[Math.min(c.hardBar*tsNum,beats.length-1)];loopOn=true;updLoop();
     closePanel();reset();bump(Math.max(40,Math.round(rate*100)-15));seekTo(loopA-lead(),loopA);gapEnd=loopA;play();
@@ -580,11 +648,21 @@ const LES=[
 {id:"x2",lv:4,n:"Blast beat build-up",bpm:90,rep:8,bars:[{Y:"xxxxxxxxxxxxxxxx",K:G8.H,S:".x.x.x.x.x.x.x.x"}]},
 {id:"x3",lv:4,n:"Hat and open-hat 16th groove",bpm:85,rep:8,bars:[{H:"xxx.xxx.xxx.xxx.",O:"...x...x...x...x",K:"x..x..x...x.....",S:"....x.......x..x"}]},
 {id:"x4",lv:4,n:"Groove in 7/4",bpm:80,ts:7,rep:6,bars:[{H:"x.x.x.x.x.x.x.x.x.x.x.x.x.x.",K:"x.......x.x.....x.......",S:"....x.......x.......x..."}]},
+{id:"e6",lv:1,n:"Disco beat with open hi-hat",bpm:90,rep:8,bars:[{H:"x...x...x...x...",O:"..x...x...x...x.",K:"x...x...x...x...",S:G8.S}]},
+{id:"e7",lv:1,n:"Reggae one-drop",bpm:70,rep:8,bars:[{H:G8.H,K:"........x.......",R:"........x......."}]},
+{id:"i8",lv:2,n:"Boom-bap hip-hop beat",bpm:90,rep:8,bars:[{H:G8.H,K:"x.......x.x.....",S:G8.S}]},
+{id:"i9",lv:2,n:"Bossa nova feel",bpm:100,rep:8,bars:[{Y:G8.H,R:"x..x..x...x.x...",K:"x..x..x.x..x..x."}]},
+{id:"i10",lv:2,n:"Slow shuffle on the ride",bpm:70,r:3,rep:8,bars:[{Y:"x.xx.xx.xx.x",K:"x.....x.....",S:"...x.....x.."}]},
+{id:"a6",lv:3,n:"Hi-hat foot on 2 and 4",bpm:80,rep:8,bars:[{Y:G8.H,K:"x.......x.x.....",S:G8.S,P:"....x.......x..."}]},
+{id:"a7",lv:3,n:"Gallop kick groove",bpm:90,rep:8,bars:[{H:"x...x...x...x...",K:"x.xxx.xxx.xxx.xx",S:G8.S}]},
+{id:"a8",lv:3,n:"Half-time shuffle",bpm:80,r:3,rep:8,bars:[{H:"x.xx.xx.xx.x",K:"x.........x.",S:"......x....."}]},
+{id:"x6",lv:4,n:"Four-limb groove with ride and hat foot",bpm:80,rep:8,bars:[{Y:"xxxxxxxxxxxxxxxx",K:"x..x..x...x..x..",S:G8.S,P:"....x.......x..."}]},
+{id:"x7",lv:4,n:"Seven-eight groove",bpm:100,ts:7,r:2,rep:8,bars:[{H:"x.x.x.x.x.x.x.",K:"x.....x.x.....",S:"....x.....x..."}]},
 {id:"x5",lv:4,n:"Full-kit fill",bpm:80,rep:4,bars:[{...G8,...CR},G8,G8,{S:"xxxx............","1":"....xxxx........","2":"........xx......","3":"..........xx....","4":"............xx..",K:"..............xx"}]}
 ];
 
-function openLesson(les){
-  const ts=les.ts||4,r=les.r||4,spb=ts*r,bd0=60/les.bpm,sd=bd0/r,nbars=les.rep*les.bars.length;
+function openLesson(les,mul=1){
+  const ts=les.ts||4,r=les.r||4,spb=ts*r,bd0=60/les.bpm,sd=bd0/r,nbars=les.rep*mul*les.bars.length;
   const out=[],bk2=[],ROOT=[0,5,7,5];
   for(let b=0;b<nbars;b++){
     const m=les.bars[b%les.bars.length],t0=b*spb*sd,root=ROOT[b%4];
@@ -602,13 +680,13 @@ function openLesson(les){
   out.sort((a,b)=>a.t-b.t);bk2.sort((a,b)=>a.t-b.t);
   notes=out;endT=out[out.length-1].t+1.5;
   beats=[];for(let k=0;k<=nbars*ts+2;k++)beats.push(k*bd0);
-  back=bk2;tsNum=ts;bd=bd0;baseBpm=les.bpm;
+  back=bk2;tsNum=ts;bd=bd0;baseBpm=les.bpm;assignStick(out);
   loopA=loopB=null;loopOn=false;updLoop();
-  songId="lesson:"+les.id;songName=les.n;
-  $("title").textContent=les.n+" · "+LV[les.lv]+bestText();
+  free=false;songId="lesson:"+les.id;songName=les.n;
+  $("title").textContent=(wq?"("+(wi+1)+"/"+wq.length+") ":"")+les.n+" · "+LV[les.lv]+bestText();
   $("empty").style.display="none";
   $("bkOn").checked=true;bump(100);reset();$("play").textContent="Play";
-  say(`${out.length} notes · ${les.bpm} BPM · ${LV[les.lv]} lesson`);
+  say(`${les.n} · ${LV[les.lv]} · ${les.bpm} BPM · you play: ${[...new Set(out.map(n=>L[n.l].n))].join(", ")}`);
 }
 function bk(x,at){
   const d=x.d/rate,g=ac.createGain();g.connect(ac.destination);
@@ -634,7 +712,7 @@ function showLessons(sel){
   panel(`<h2>Practice lessons</h2><p>Your level: <b>${LV[now]}</b>. ${next?"Next up: "+esc(next.n)+".":"You have mastered every lesson. Nicely done."}</p><div class="chips">${chips}</div>${rows}<p style="color:var(--mute);font-size:13px">A lesson counts as mastered at 85% accuracy or better at 90% tempo or faster. Master about 60% of a level to move up to the next.</p><div class="btns"><button class="btn" id="rClose">Close</button></div>`);
   $("rClose").onclick=closePanel;
   document.querySelectorAll("#resCard [data-lv]").forEach(b=>b.onclick=()=>showLessons(+b.dataset.lv));
-  document.querySelectorAll("#resCard [data-id]").forEach(b=>b.onclick=()=>{closePanel();openLesson(LES.find(x=>x.id===b.dataset.id))});
+  document.querySelectorAll("#resCard [data-id]").forEach(b=>b.onclick=()=>{wq=null;closePanel();openLesson(LES.find(x=>x.id===b.dataset.id))});
 }
 function coach(acc,avg){
   const tips=[];let hardBar=0;
@@ -707,6 +785,241 @@ function startCalib(){
   raf=requestAnimationFrame(loop);
 }
 
+/* ---------- help, welcome, tools ---------- */
+function nextLesson(){
+  const o=[...LES].sort((a,b)=>a.lv-b.lv||LES.indexOf(a)-LES.indexOf(b));
+  const i=o.findIndex(x=>"lesson:"+x.id===songId);
+  return o.slice(i+1).find(x=>!mastered(x.id))||o.find(x=>!mastered(x.id))||null;
+}
+function showHelp(){
+  const w=win.map(x=>Math.round(x*1000));
+  panel(`<h2>How Stickwork works</h2>
+  <h3>Quick start</h3>
+  <ol><li>Tap <b>Lessons</b> and pick one. Start at Beginner.</li>
+  <li>Tap <b>Play drums for me</b> and <b>Play</b> to hear it first.</li>
+  <li>Switch on <b>Practice: wait for me</b> to learn it. The song waits for you.</li>
+  <li>Switch it off and play along to the click. Hit each pad when its note reaches the line.</li></ol>
+  <h3>How you are scored</h3>
+  <ul><li><b>Perfect</b>: within ${w[0]} ms of the note.</li><li><b>Early / Late</b>: within ${w[1]} ms (counts as most of a hit).</li><li><b>Off</b>: within ${w[2]} ms (counts as part of a hit).</li><li><b>Miss</b>: a note you did not play in time.</li></ul>
+  <p>Change how strict this is under Settings, Timing.</p>
+  <h3>Levels</h3>
+  <p>Master about 60% of the lessons in a level to move up. A lesson is mastered at 85% accuracy or better at 90% tempo or faster. Slow the tempo down while you learn.</p>
+  <h3>Connecting an e-drum kit</h3>
+  <ol><li>Use a USB cable (a USB-C adapter on a tablet).</li><li>Open Stickwork in Chrome and tap <b>Connect drum kit</b>. Allow MIDI access.</li><li>Hit a pad. Its lane should light up.</li><li>Open Settings and run <b>Calibrate hits</b> once.</li></ol>
+  <p>If a pad does nothing, the message line shows its note number. Unplug and re-plug the cable, then try again.</p>
+  <h3>Headphones</h3>
+  <p>Bluetooth headphones add a delay. Use the module's headphone jack for the drums, and raise Settings, Audio delay until the click lines up.</p>
+  <h3>Keyboard keys</h3>
+  <p><kbd>Q</kbd> Crash 1 · <kbd>A</kbd> Hat · <kbd>S</kbd> Hat open · <kbd>Z</kbd> Pedal · <kbd>D</kbd> Snare · <kbd>X</kbd> Rim · <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> Toms 1 to 4 · <kbd>K</kbd> Crash 2 · <kbd>L</kbd> Ride · <kbd>Space</kbd> Kick</p>
+  <h3>Your data</h3>
+  <p>Songs, scores and settings stay on this device. Nothing is uploaded. Use Settings, Export progress to keep a backup.</p>
+  <div class="btns"><button class="btn main" id="rClose">Got it</button></div>`);
+  $("rClose").onclick=closePanel;
+}
+function showWelcome(){
+  try{localStorage.setItem("sw_seen","1")}catch(e){}
+  panel(`<h2>Welcome to Stickwork</h2><p>Practice drum grooves with an e-drum kit, the touch screen or your keyboard. It takes three steps:</p>
+  <ol><li><b>Pick a lesson.</b> Start at Beginner and work your way up.</li>
+  <li><b>Connect your kit</b> (optional). Plug it in, tap <b>Connect drum kit</b>, then run <b>Calibrate hits</b> in Settings.</li>
+  <li><b>Press Play</b> and hit the pads when the notes reach the line.</li></ol>
+  <div class="btns"><button class="btn main" id="wLes">Start a lesson</button><button class="btn" id="wHelp">How it works</button><button class="btn" id="rClose">Skip</button></div>`);
+  $("rClose").onclick=closePanel;
+  $("wLes").onclick=()=>showLessons(0);
+  $("wHelp").onclick=showHelp;
+}
+function applyTools(on){
+  $("tools").classList.toggle("open",on);
+  $("toolsB").textContent="Tools "+(on?"▴":"▾");
+  $("toolsB").setAttribute("aria-expanded",on?"true":"false");
+}
+let toolsOn=false;
+try{toolsOn=localStorage.getItem("sw_tools")==="1"}catch(e){}
+
+/* ---------- extras: free play, workout, histogram, wake lock, backup, count-in ---------- */
+let free=false,wq=null,wi=0,countBars=1,wl=null;
+const offL=[];
+try{const c=localStorage.getItem("sw_cnt");if(c!==null&&(c==="0"||c==="1"||c==="2"))countBars=+c}catch(e){}
+async function wake(on){
+  try{
+    if(on&&"wakeLock" in navigator&&!wl){wl=await navigator.wakeLock.request("screen");wl.addEventListener("release",()=>{wl=null})}
+    else if(!on&&wl){const w=wl;wl=null;await w.release()}
+  }catch(e){}
+}
+function histSvg(){
+  if(!offL.length)return"";
+  const bins=new Array(15).fill(0);
+  offL.forEach(m=>{let i=Math.floor((m+150)/20);if(i<0)i=0;if(i>14)i=14;bins[i]++});
+  const mx=Math.max(...bins),W=300,H=70,bw=W/15;
+  let s=`<svg viewBox="0 0 ${W} ${H+16}" width="100%" role="img" aria-label="Timing spread from early to late">`;
+  bins.forEach((v,i)=>{const hh=Math.round(v/mx*H);s+=`<rect x="${i*bw+2}" y="${H-hh}" width="${bw-4}" height="${hh}" rx="2" style="fill:${i===7?"var(--ink)":"var(--mute)"}"/>`});
+  s+=`<line x1="${W/2}" y1="0" x2="${W/2}" y2="${H}" style="stroke:var(--line)" stroke-dasharray="3 3"/><text x="0" y="${H+13}" font-size="10" style="fill:var(--mute)">early</text><text x="${W}" y="${H+13}" font-size="10" text-anchor="end" style="fill:var(--mute)">late</text></svg>`;
+  return s;
+}
+function openFree(bpm,ts){
+  free=true;wq=null;back=[];
+  bd=60/bpm;tsNum=ts;baseBpm=bpm;
+  beats=[];for(let k=0;k<=bpm*20+4;k++)beats.push(k*bd);
+  notes=[{t:1195,l:12}];endT=1200;
+  songId="free";songName="Free play";loopA=loopB=null;loopOn=false;updLoop();
+  $("title").textContent="Free play · "+bpm+" BPM";$("empty").style.display="none";
+  $("met").checked=true;$("bkOn").checked=false;bump(100);reset();$("play").textContent="Play";
+  say("Press Play, then hit any pad along to the click.");
+}
+function showFree(){
+  panel(`<h2>Free play</h2><p>Play along to a click with no song. Pick the speed and feel.</p><p>Tempo <input id="fB" type="number" min="40" max="200" value="${Math.round(baseBpm)||90}" style="width:4.5em"> BPM <select id="fT" class="btn"><option value="4">4/4</option><option value="3">3/4</option><option value="5">5/4</option><option value="7">7/4</option></select></p><div class="btns"><button class="btn main" id="fGo">Start</button><button class="btn" id="rClose">Close</button></div>`);
+  $("rClose").onclick=closePanel;
+  $("fGo").onclick=()=>{const b=Math.min(200,Math.max(40,Math.round(+$("fB").value||90)));const t=+$("fT").value;closePanel();openFree(b,t)};
+}
+function workoutPlan(){
+  const lv=myLevel(),pick=(l,k)=>LES.filter(x=>x.lv===l).sort((a,b)=>(bestOf(a.id)??-1)-(bestOf(b.id)??-1))[k];
+  const q=[LES.filter(x=>x.lv===Math.max(0,lv-1))[0],pick(lv,0),pick(lv,1),pick(lv,2)];
+  if(lv<LV.length-1)q.push(pick(lv+1,0));
+  return [...new Set(q.filter(Boolean))];
+}
+function showWorkout(){
+  const plan=workoutPlan(),mins=Math.round(plan.reduce((a,x)=>a+(x.rep*2*x.bars.length*(x.ts||4)*60/x.bpm)/60,0));
+  panel(`<h2>Daily workout</h2><p>${plan.length} lessons picked for your level (<b>${LV[myLevel()]}</b>), about ${mins} minutes. It starts with an easier warm-up and ends with a stretch.</p>${plan.map((x,i)=>`<div class="srow"><span style="color:var(--ink)">${i+1}. ${esc(x.n)}</span><span>${LV[x.lv]}</span></div>`).join("")}<div class="btns"><button class="btn main" id="wGo">Start workout</button><button class="btn" id="rClose">Close</button></div>`);
+  $("rClose").onclick=closePanel;
+  $("wGo").onclick=()=>{wq=plan;wi=0;closePanel();openLesson(wq[0],2);play()};
+}
+function exportData(){
+  const o={v:1};
+  ["sw_hist","sw_time","sw_goals","sw_lat","sw_aud","sw_win","sw_cnt","sw_staff","sw_stick","sw_tools","sw_seen"].forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)o[k]=v}catch(e){}});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(o)],{type:"application/json"}));
+  a.download="stickwork-progress-"+dayKey(Date.now())+".json";
+  document.body.appendChild(a);a.click();a.remove();
+}
+async function importData(f){
+  try{
+    const o=JSON.parse(await f.text());
+    const ok=["sw_hist","sw_time","sw_goals","sw_lat","sw_aud","sw_win","sw_cnt","sw_staff","sw_stick","sw_tools","sw_seen"];
+    if(!o||o.v!==1)throw new Error("not a backup");
+    ok.forEach(k=>{if(typeof o[k]==="string")localStorage.setItem(k,o[k])});
+    showStats();say("Progress restored. Reload the app to apply all settings.");
+  }catch(e){say("That file is not a Stickwork backup.")}
+}
+
+/* ---------- staff stems and beams, sticking, release notes ---------- */
+let stickOn=true;
+try{if(localStorage.getItem("sw_stick")==="0")stickOn=false}catch(e){}
+let stf={src:null,ev:[]};
+const CYM=[0,1,2,10,11];
+function buildStaff(){
+  stf.src=notes;stf.ev=[];
+  const voices=[[],[]];
+  for(const n of notes){
+    const v=(n.l===3||n.l===12)?1:0,list=voices[v],e=list[list.length-1];
+    if(e&&Math.abs(e.t-n.t)<.006)e.ns.push(n);else list.push({t:n.t,ns:[n],v});
+  }
+  for(let v=0;v<2;v++){
+    const list=voices[v];
+    list.forEach((e,i)=>{
+      const nxt=list[i+1],sub=(nxt?nxt.t-e.t:bd*4)/bd,st=e.ns.map(n=>SP[n.l]);
+      e.beams=sub<=.26?2:sub<=.51?1:0;
+      e.beat=Math.floor(e.t/bd+1e-6);
+      e.top=Math.max(...st);e.bot=Math.min(...st);
+      e.end=v===0?Math.max(e.top+6,13):e.bot-6;
+    });
+    let grp=[];
+    const flush=()=>{
+      if(grp.length>=2){
+        const lvl=v===0?Math.max(...grp.map(x=>x.end)):Math.min(...grp.map(x=>x.end));
+        grp.forEach(x=>{x.grp=grp;x.end=lvl});
+      }else if(grp.length===1)grp[0].flag=true;
+      grp=[];
+    };
+    list.forEach(e=>{
+      if(e.beams>0&&grp.length&&grp[0].beat===e.beat)grp.push(e);
+      else{flush();if(e.beams>0)grp=[e]}
+    });
+    flush();
+    stf.ev.push(...list);
+  }
+  stf.ev.sort((a,b)=>a.t-b.t);
+}
+const evDone=e=>e.ns.every(n=>n.r==="hit"||n.r==="skip"||n.r==="miss");
+function drawStems(g,ph,sx,sp,Y,W,clefW){
+  g.strokeStyle=C.ink;g.fillStyle=C.ink;g.lineCap="butt";
+  const stemX=e=>ph+(e.t-songTime)*sx+(e.v===0?sp*.62:-sp*.62);
+  for(const e of stf.ev){
+    const ex=ph+(e.t-songTime)*sx;
+    if(ex>W+40)break;
+    if(e.grp&&e.grp[0]!==e)continue;
+    if(!e.grp&&ex<clefW-20)continue;
+    const dir=e.v===0?1:-1;
+    if(e.grp){
+      const gr=e.grp,x1=stemX(gr[0]),x2=stemX(gr[gr.length-1]);
+      if(x2<clefW-20)continue;
+      g.globalAlpha=gr.every(evDone)?.28:1;
+      g.lineWidth=1.6;
+      for(const m of gr){
+        const x=stemX(m);
+        g.beginPath();g.moveTo(x,Y(m.v===0?m.bot:m.top));g.lineTo(x,Y(m.end));g.stroke();
+      }
+      const yb=Y(gr[0].end);
+      g.lineWidth=4;g.beginPath();g.moveTo(x1-.8,yb+dir*2);g.lineTo(x2+.8,yb+dir*2);g.stroke();
+      g.lineWidth=3;
+      gr.forEach((m,i)=>{
+        if(m.beams<2)return;
+        const nx=gr[i+1],pv=gr[i-1],ys=yb+dir*7,x=stemX(m);
+        if(nx&&nx.beams===2){g.beginPath();g.moveTo(x,ys);g.lineTo(stemX(nx),ys);g.stroke()}
+        else if(!(pv&&pv.beams===2)){
+          const toward=nx?1:-1;
+          g.beginPath();g.moveTo(x,ys);g.lineTo(x+toward*sp*.8,ys);g.stroke();
+        }
+      });
+    }else{
+      const x=stemX(e);
+      g.globalAlpha=evDone(e)?.28:1;
+      g.lineWidth=1.6;
+      g.beginPath();g.moveTo(x,Y(e.v===0?e.bot:e.top));g.lineTo(x,Y(e.end));g.stroke();
+      if(e.flag){
+        const yb=Y(e.end);
+        for(let k=0;k<e.beams;k++){
+          const off=dir*k*5;
+          g.beginPath();g.moveTo(x,yb+off);g.quadraticCurveTo(x+sp*.9,yb+off+dir*sp*.5,x+sp*.7,yb+off+dir*sp*1.4);g.stroke();
+        }
+      }
+    }
+  }
+  g.globalAlpha=1;
+}
+function assignStick(out){
+  const ev=[];
+  out.forEach(n=>{
+    if(n.l===3||n.l===12)return;
+    const e=ev[ev.length-1];
+    if(e&&Math.abs(e.t-n.t)<.006)e.ns.push(n);else ev.push({t:n.t,ns:[n]});
+  });
+  const cymT=ev.filter(e=>e.ns.some(n=>CYM.includes(n.l))).map(e=>e.t),win=bd*1.01;
+  let last="L";
+  ev.forEach(e=>{
+    const cy=e.ns.filter(n=>CYM.includes(n.l)),dr=e.ns.filter(n=>!CYM.includes(n.l));
+    if(cy.length&&dr.length){cy.forEach(n=>n.h="R");dr.forEach((n,i)=>n.h=i%2?"R":"L");last="L";return}
+    if(cy.length){cy.forEach(n=>n.h="R");last="R";return}
+    const near=cymT.some(t=>t>e.t&&t-e.t<=win)&&cymT.some(t=>t<e.t&&e.t-t<=win);
+    if(near){dr.forEach(n=>n.h="L");last="L"}
+    else dr.forEach(n=>{n.h=last==="R"?"L":"R";last=n.h});
+  });
+}
+const NEWS=[
+{v:"1.7.1",items:["Runs where the app plays the drums for you (Play drums for me) are now listen-only. They are not saved to your progress, accuracy history or practice time, and the tempo trainer will not speed up from them. Only what you play yourself counts."]},
+{v:"1.7.0",items:["Easier to start: a welcome card on first use, a ? button with a quick-start guide, and the less-used controls tucked under Tools (it remembers if you open it).","Big Perfect, Early, Late and Miss feedback right where you hit.","Kick notes are now easy to see, and the R and L sticking letters sit in two tidy rows under the staff.","After a lesson run you get a Next lesson button. Practice runs end with a nudge to try it at full speed.","The app pauses by itself when you switch away from it, and when you open a menu.","Lessons tell you which pads you will play. Bigger touch targets, short pad names on small phones, and better support for screen readers.","Updates are now reliable: tapping Update always gives you the newest version."]},
+{v:"1.6.0",items:["The staff now has stems and beams, so eighth and sixteenth notes read like a normal drum chart.","Lessons show R and L sticking hints on the lanes and on the staff. You can switch them off in Settings.","This What’s new panel appears after each update. Tap What’s new in Settings to see it again.","New script, audio2drums.py, turns an mp3 or mp4 into a drum MIDI file you can load here."]},
+{v:"1.5.0",items:["Daily workout: five lessons picked for your level, one after another.","Free play: a click with no song, any tempo from 40 to 200 BPM.","Ten more lessons (37 in all): disco, reggae, hip-hop, bossa nova, shuffles, gallop kick, hat foot, 7/8 and more.","Timing graph on the results card, loop by bar numbers, a count-in setting, a screen that stays awake while you play, and export and import of your progress."]},
+{v:"1.4.0",items:["Calibrate hits: the app measures how late your drum hits arrive and corrects for it.","Timing windows: Easy, Normal or Strict.","Audio delay setting for Bluetooth headphones.","The app no longer plays its own sound for kit hits unless you ask it to."]},
+{v:"1.3.0",items:["27 lessons in five levels, with a level check and a recommended next lesson.","Backing music, performance mode with star ratings, focus pads, click subdivisions, coaching tips and goals.","Fixed drum hits not being matched correctly in wait mode."]},
+{v:"1.2.0",items:["Run results, progress history, speed trainer, saved songs, BPM display and practice-time tracking."]},
+{v:"1.1.0",items:["Hi-hat open, closed and pedal, and snare and rim, are now separate pads and lanes."]},
+{v:"1.0.0",items:["First installable version: works offline, opens full screen, and shows a bar when an update is ready.","Includes MIDI import, falling lanes, scoring, loops, metronome, wait-for-me practice, staff notation and Alesis Nitro Max pads."]}
+];
+function showNews(v){
+  const cur=NEWS.find(x=>x.v===v)||NEWS[0],rest=NEWS.filter(x=>x!==cur);
+  panel(`<h2>What’s new in v${cur.v}</h2><ul>${cur.items.map(t=>`<li>${t}</li>`).join("")}</ul>${rest.length?`<details><summary>Earlier versions</summary>${rest.map(x=>`<p><b>v${x.v}</b></p><ul>${x.items.map(t=>`<li>${t}</li>`).join("")}</ul>`).join("")}</details>`:""}<div class="btns"><button class="btn main" id="rClose">Got it</button></div>`);
+  $("rClose").onclick=closePanel;
+}
+
 function frame(){
   requestAnimationFrame(frame);
   if(playing){
@@ -718,13 +1031,14 @@ function frame(){
     }else waiting=false;
     if(audio&&!practice&&audio.paused&&!audio.ended&&songTime>=0){audio.currentTime=songTime;audio.play().catch(()=>{})}
     const nowT=performance.now();
-    if(lastF&&nowT-lastF<200)tPlay+=nowT-lastF;
+    const hear=$("hear").checked;
+    if(hear)heard=true;
+    if(lastF&&nowT-lastF<200&&!hear)tPlay+=nowT-lastF;
     lastF=nowT;
     if(tPlay>15000){addTime(tPlay/1000);tPlay=0}
-    const hear=$("hear").checked;
     for(const n of notes){
       if(n.t>songTime+.2+aud/1000*rate)break;
-      if(!practice&&!n.j&&n.t<songTime-win[2]){n.j=1;n.r="miss";jc++;misses++;combo=0;ls[n.l].m++;missT.push(n.t);stat()}
+      if(!practice&&!n.j&&n.t<songTime-win[2]){n.j=1;n.r="miss";jc++;misses++;combo=0;ls[n.l].m++;missT.push(n.t);stat();fbSet(n.l,"Miss","#d64550")}
       if((hear||!focus[n.l])&&!n.s&&n.t<=songTime+aud/1000*rate&&(!loopOn||loopA==null||loopB==null||n.t<loopB)){n.s=1;snd(n.l,Math.max(0,(n.t-songTime)/rate-aud/1000))}
       if(n.s===1&&n.t<=songTime){n.s=2;flash[n.l]=1}
     }
@@ -763,7 +1077,7 @@ function frame(){
 const pads=$("pads");
 L.forEach((l,i)=>{
   const b=document.createElement("button");
-  b.className="pad";b.style.background=l.c;b.textContent=l.n;b.title="Key: "+(l.k===" "?"Space":l.k.toUpperCase());
+  b.className="pad";b.style.background=l.c;b.innerHTML='<span class="f">'+l.n+'</span><span class="s">'+SHORT[i]+'</span>';b.title="Key: "+(l.k===" "?"Space":l.k.toUpperCase());b.setAttribute("aria-label",l.n+" pad");
   b.addEventListener("pointerdown",e=>{e.preventDefault();hit(i,e.timeStamp)});
   b.addEventListener("contextmenu",e=>e.preventDefault());
   pads.appendChild(b);
@@ -775,6 +1089,7 @@ addEventListener("keydown",e=>{
 });
 addEventListener("keyup",e=>{if(e.key===" ")e.preventDefault()});
 
+let kitSaid=false;
 function midiTime(m){
   const now=performance.now(),d=now-m.timeStamp,ok=isFinite(d)&&d>=-20&&d<=120;
   $("mdiag").textContent="MIDI clock offset: "+(isFinite(d)?Math.round(d):"n/a")+" ms"+(ok?"":" (out of step, using the screen clock)");
@@ -797,6 +1112,7 @@ $("midi").onclick=async()=>{
         names.push(inp.name);
       });
       $("midi").textContent=names.length?"Kit: "+names[0]:"No kit found";
+      if(names.length&&!kitSaid&&!playing){kitSaid=true;say("Kit connected. For the best timing, run Calibrate hits in Settings once.")}
     };
     attach();a.onstatechange=attach;
   }catch(e){say("MIDI permission was denied.")}
@@ -811,7 +1127,7 @@ $("mid").onchange=async e=>{
     beats=r.beats;tsNum=r.tsNum;bd=beats.length>1?beats[1]-beats[0]:.5;
     loopA=loopB=null;loopOn=false;updLoop();
     songId=f.name+"|"+notes.length;songName=f.name;saveSong(f.name,buf,songId);
-    back=[];baseBpm=r.bpm;$("tempo").dispatchEvent(new Event("input"));
+    back=[];free=false;wq=null;baseBpm=r.bpm;$("tempo").dispatchEvent(new Event("input"));
     $("title").textContent=f.name+bestText();$("empty").style.display="none";
     reset();$("play").textContent="Play";
     say(`${notes.length} notes · ${r.bpm} BPM`+(r.usedAll?" · no drum channel, used all notes":""));
@@ -891,6 +1207,32 @@ $("winSel").onchange=e=>{winIdx=+e.target.value;win=WINS[winIdx];try{localStorag
 $("audD").value=aud;$("audV").textContent=aud+" ms";
 $("audD").oninput=e=>{aud=+e.target.value;$("audV").textContent=aud+" ms";try{localStorage.setItem("sw_aud",aud)}catch(err){}};
 $("padSnd").onchange=e=>{soundAll=e.target.checked};
+$("freeB").onclick=showFree;
+$("helpB").onclick=showHelp;
+$("emptyHelp").onclick=showHelp;
+$("emptyGo").onclick=()=>showLessons(0);
+$("toolsB").onclick=()=>{toolsOn=!toolsOn;applyTools(toolsOn);try{localStorage.setItem("sw_tools",toolsOn?"1":"0")}catch(e){}};
+applyTools(toolsOn);
+try{if(!localStorage.getItem("sw_seen")&&!localStorage.getItem("sw_hist")&&!localStorage.getItem("sw_ver"))setTimeout(showWelcome,350)}catch(e){}
+$("workB").onclick=showWorkout;
+$("expB").onclick=exportData;
+$("impF").onchange=e=>{const f=e.target.files[0];if(f)importData(f);e.target.value=""};
+$("cntSel").value=countBars;
+$("hear").onchange=e=>{if(e.target.checked)say("Listen-only: runs with the app playing for you are not counted in your progress")};
+$("cntSel").onchange=e=>{countBars=+e.target.value;try{localStorage.setItem("sw_cnt",countBars)}catch(err){}if(!playing)reset()};
+$("lbGo").onclick=()=>{
+  if(!beats.length){say("Load a song or lesson first.");return}
+  const a=Math.max(1,Math.floor(+$("lbA").value||1)),b=Math.max(a,Math.floor(+$("lbB").value||a));
+  const A=beats[Math.min((a-1)*tsNum,beats.length-1)],B=beats[Math.min(b*tsNum,beats.length-1)];
+  if(B<=A+.2){say("That bar range is outside the song.");return}
+  loopA=A;loopB=B;loopOn=true;updLoop();
+  seekTo(A-lead(),A);gapEnd=countBars?A:-Infinity;
+  say("Looping bars "+a+" to "+b);
+};
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&playing){pause();say("Paused while the app was in the background.")}else if(!document.hidden&&playing)wake(true)});
+$("newsB").onclick=()=>showNews(NEWS[0].v);
+$("stickChk").checked=stickOn;
+$("stickChk").onchange=e=>{stickOn=e.target.checked;try{localStorage.setItem("sw_stick",stickOn?"1":"0")}catch(err){}};
 $("songs").onclick=showSongs;
 $("prog").onclick=showProgress;
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&tPlay>2000){addTime(tPlay/1000);tPlay=0}});
@@ -899,11 +1241,14 @@ showStats();
 songTime=-2;resize();requestAnimationFrame(frame);
 </script>
 <script>
-const APP_VERSION="1.4.0";
+const APP_VERSION="1.7.1";
 document.getElementById("ver").textContent="v"+APP_VERSION;
 try{
   const prev=localStorage.getItem("sw_ver");
-  if(prev&&prev!==APP_VERSION)document.getElementById("judge").textContent="Updated to v"+APP_VERSION;
+  if(prev&&prev!==APP_VERSION){
+    document.getElementById("judge").textContent="Updated to v"+APP_VERSION;
+    setTimeout(()=>{if(typeof showNews==="function")showNews(APP_VERSION)},500);
+  }
   localStorage.setItem("sw_ver",APP_VERSION);
 }catch(e){}
 if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)){
