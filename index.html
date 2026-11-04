@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<!-- Stickwork v1.7.1 -->
+<!-- Stickwork v1.8.0 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Stickwork – drum practice</title>
@@ -75,6 +75,13 @@ body.perf #perfBar{display:flex}
 @media (max-width:600px){#pads .pad .f{display:none}#pads .pad .s{display:inline}#pads .pad{font-size:10px;letter-spacing:-.2px}#pads{gap:2px;padding:6px 6px 8px}}
 .pad{height:68px;border:0;border-radius:9px;padding:0;line-height:1.1;color:#14151d;font:700 11px "Barlow Semi Condensed",system-ui,sans-serif;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .pad:active{filter:brightness(.8);transform:scale(.97)}
+#resCard textarea{width:100%;box-sizing:border-box;min-height:132px;font:14px/1.45 ui-monospace,Menlo,Consolas,monospace;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px;resize:vertical;-webkit-user-select:text;user-select:text}
+#resCard .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+#resCard .fgrid label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mute);min-width:0}
+#resCard .fgrid input,#resCard .fgrid select{box-sizing:border-box;width:100%;min-height:40px;font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:6px 8px}
+#resCard .cinfo{font-size:13px;color:var(--mute);min-height:18px;margin:4px 0}
+#resCard .cnote{font-size:12px;color:var(--mute);margin:0}
+#resCard .btns{flex-wrap:wrap}
 details{padding:0 10px 2px;color:var(--mute)}
 summary{cursor:pointer}
 #upd{display:none;position:fixed;z-index:40;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 8px);background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 12px;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 4px 18px #0006}
@@ -87,6 +94,7 @@ summary{cursor:pointer}
   <button class="btn main" id="lessonsB">Lessons</button>
   <button class="btn" id="workB">Daily workout</button>
   <button class="btn" id="freeB">Free play</button>
+  <button class="btn" id="chordB">From chords</button>
   <button class="btn" id="perfB">Performance</button>
   <button class="btn" id="midi">Connect drum kit</button>
   <button class="btn" id="prog">Progress</button>
@@ -103,7 +111,7 @@ summary{cursor:pointer}
 <div class="row"><span>Tempo</span><input id="tempo" type="range" min="40" max="120" step="5" value="100" aria-label="Tempo percent"><b id="tempoV">100%</b></div>
 <div id="tools">
   <div class="bar" style="padding-top:2px">
-    <label class="btn">Load MIDI<input id="mid" type="file" accept=".mid,.midi,audio/midi"></label>
+    <label class="btn">Open file<input id="mid" type="file"></label>
     <label class="btn">Backing track<input id="aud" type="file" accept="audio/*,video/*"></label>
     <button class="btn" id="songs">Songs</button>
     <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="trn" type="checkbox" style="display:inline;margin:0"> Speed trainer</label>
@@ -130,7 +138,7 @@ summary{cursor:pointer}
   <canvas id="cv"></canvas>
   <div id="empty"><div>
     <p style="font-size:18px;color:var(--ink);font-weight:700">Ready to play some drums?</p>
-    <p>Start with a built-in lesson, or load your own drum MIDI file from Tools.</p>
+    <p>Start with a built-in lesson, turn chords into a drum part, or open your own MIDI, MuseScore or Guitar Pro file from Tools.</p>
     <p>Play with an e-drum kit, the pads below, or your keyboard.</p>
     <div class="btns"><button class="btn main" id="emptyGo">Start a lesson</button><button class="btn" id="emptyHelp">How it works</button></div>
   </div></div>
@@ -172,7 +180,7 @@ const L=[
 const noteLane={},kitLane={};
 L.forEach((l,i)=>{l.m.forEach(n=>noteLane[n]=i);l.d.forEach(n=>kitLane[n]=i)});
 
-let notes=[],endT=0,playing=false,fin=false,songTime=0,startWall=0,startSong=0,rate=1,lat=0;
+let chordMarks=[],notes=[],endT=0,playing=false,fin=false,songTime=0,startWall=0,startSong=0,rate=1,lat=0;
 let score=0,jc=0,combo=0,bestCombo=0,misses=0,ac=null,audio=null;
 let loopA=null,loopB=null,loopOn=false,beats=[],tsNum=4,bd=.5,nb=0,seeking=false;
 let practice=false,waiting=false,gapBeats=0,gapEnd=-Infinity;
@@ -190,7 +198,7 @@ function parseMidi(buf){
   if(str(4)!=="MThd")throw new Error("not a MIDI file");
   p+=4;p+=2;const ntrk=d.getUint16(p);p+=2;const div=d.getUint16(p);p+=2;
   if(div&0x8000)throw new Error("SMPTE timing is not supported");
-  const raw=[],tempos=[[0,500000]];let tsNum=4,tsSet=false;
+  const raw=[],tempos=[[0,500000]];let tsNum=4,tsDen=4,tsSet=false;
   for(let t=0;t<ntrk;t++){
     if(str(4)!=="MTrk")throw new Error("bad track header");
     const len=d.getUint32(p);p+=4;const end=p+len;let tick=0,run=0;
@@ -201,7 +209,7 @@ function parseMidi(buf){
       if(s===0xFF){
         const type=d.getUint8(p++),l=vl();
         if(type===0x51&&l===3)tempos.push([tick,(d.getUint8(p)<<16)|(d.getUint8(p+1)<<8)|d.getUint8(p+2)]);
-        if(type===0x58&&!tsSet&&l>=2){tsNum=d.getUint8(p)||4;tsSet=true}
+        if(type===0x58&&!tsSet&&l>=2){tsNum=d.getUint8(p)||4;tsDen=1<<Math.min(6,d.getUint8(p+1));tsSet=true}
         p+=l;
       }else if(s===0xF0||s===0xF7){p+=vl()}
       else{
@@ -224,8 +232,12 @@ function parseMidi(buf){
   const lastT=new Array(L.length).fill(-1),clean=[];
   for(const n of out){if(n.t-lastT[n.l]<0.012)continue;lastT[n.l]=n.t;clean.push(n)}
   const lastN=clean.length?clean[clean.length-1].t:0,beats=[];
-  for(let k=0;k<20000;k++){const t=toSec(k*div);beats.push(t);if(t>lastN+2)break}
-  return {notes:clean,beats,tsNum,bpm:Math.round(60e6/tempos[tempos.length>1?1:0][1]),usedAll:!drums.length};
+  let unit=div,tsOut=tsNum;
+  if(tsDen===8){if(tsNum>=6&&tsNum%3===0){unit=div*1.5;tsOut=tsNum/3}else unit=div/2}
+  else if(tsDen===2)unit=div*2;
+  else if(tsDen===16)unit=div/4;
+  for(let k=0;k<40000;k++){const t=toSec(k*unit);beats.push(t);if(t>lastN+2)break}
+  return {notes:clean,beats,tsNum:tsOut,bpm:Math.round(60e6/tempos[tempos.length>1?1:0][1]*div/unit),usedAll:!drums.length};
 }
 
 /* ---------- sound ---------- */
@@ -397,6 +409,18 @@ function draw(){
   }
   ctx.strokeStyle=C.line;ctx.lineWidth=1;
   for(let i=1;i<L.length;i++){ctx.beginPath();ctx.moveTo(i*lw,0);ctx.lineTo(i*lw,H);ctx.stroke()}
+  if(chordMarks.length){
+    ctx.font='700 14px "Barlow Semi Condensed",system-ui,sans-serif';ctx.textAlign="left";
+    for(const m of chordMarks){
+      const y=hy-(m.t-songTime)*px;
+      if(y>H+24)continue;if(y<-24)break;
+      if(m.b){ctx.globalAlpha=.3;ctx.strokeStyle=C.ink;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+      const tx=(m.s?m.s.toUpperCase()+"  ":"")+m.n,w=ctx.measureText(tx).width+12;
+      ctx.globalAlpha=.88;ctx.fillStyle=C.stage;ctx.fillRect(4,y-17,w,19);
+      ctx.globalAlpha=1;ctx.fillStyle=C.ink;ctx.fillText(tx,10,y-3);
+    }
+    ctx.textAlign="center";
+  }
   for(const n of notes){
     const y=hy-(n.t-songTime)*px;
     if(y<-20)break;
@@ -452,6 +476,14 @@ function drawStaff(){
     g.beginPath();g.moveTo(x,bar?Y(8):Y(9.5));g.lineTo(x,bar?Y(0):Y(-.5));g.stroke();
   });
   g.globalAlpha=1;
+  if(chordMarks.length){
+    g.font="700 "+Math.max(11,Math.round(sp*1.7))+"px system-ui,sans-serif";g.textAlign="left";g.fillStyle=C.ink;
+    for(const m of chordMarks){
+      const x=ph+(m.t-songTime)*sx;
+      if(x>W+60)break;if(x<clefW-60)continue;
+      g.fillText((m.s?m.s+" · ":"")+m.n,x+3,12);
+    }
+  }
   drawStems(g,ph,sx,sp,Y,W,clefW);
   for(const n of notes){
     const x=ph+(n.t-songTime)*sx;
@@ -682,7 +714,7 @@ function openLesson(les,mul=1){
   beats=[];for(let k=0;k<=nbars*ts+2;k++)beats.push(k*bd0);
   back=bk2;tsNum=ts;bd=bd0;baseBpm=les.bpm;assignStick(out);
   loopA=loopB=null;loopOn=false;updLoop();
-  free=false;songId="lesson:"+les.id;songName=les.n;
+  chordMarks=[];free=false;songId="lesson:"+les.id;songName=les.n;
   $("title").textContent=(wq?"("+(wi+1)+"/"+wq.length+") ":"")+les.n+" · "+LV[les.lv]+bestText();
   $("empty").style.display="none";
   $("bkOn").checked=true;bump(100);reset();$("play").textContent="Play";
@@ -807,6 +839,8 @@ function showHelp(){
   <h3>Connecting an e-drum kit</h3>
   <ol><li>Use a USB cable (a USB-C adapter on a tablet).</li><li>Open Stickwork in Chrome and tap <b>Connect drum kit</b>. Allow MIDI access.</li><li>Hit a pad. Its lane should light up.</li><li>Open Settings and run <b>Calibrate hits</b> once.</li></ol>
   <p>If a pad does nothing, the message line shows its note number. Unplug and re-plug the cable, then try again.</p>
+  <h3>Getting music in</h3>
+  <ul><li><b>From chords:</b> paste chords from Ultimate Guitar, or type them like | Am | F | C | G |. Pick a style and Stickwork writes the drums.</li><li><b>MuseScore:</b> download the MIDI or MusicXML file, then Tools, Open file.</li><li><b>Songsterr:</b> open the Guitar Pro file (.gp, .gp5) you downloaded. Only the drum track is used.</li><li><b>PDF:</b> a PDF is a picture, so notes cannot be read from it. Use MIDI or MusicXML instead.</li></ul>
   <h3>Headphones</h3>
   <p>Bluetooth headphones add a delay. Use the module's headphone jack for the drums, and raise Settings, Audio delay until the click lines up.</p>
   <h3>Keyboard keys</h3>
@@ -861,7 +895,7 @@ function openFree(bpm,ts){
   beats=[];for(let k=0;k<=bpm*20+4;k++)beats.push(k*bd);
   notes=[{t:1195,l:12}];endT=1200;
   songId="free";songName="Free play";loopA=loopB=null;loopOn=false;updLoop();
-  $("title").textContent="Free play · "+bpm+" BPM";$("empty").style.display="none";
+  chordMarks=[];$("title").textContent="Free play · "+bpm+" BPM";$("empty").style.display="none";
   $("met").checked=true;$("bkOn").checked=false;bump(100);reset();$("play").textContent="Play";
   say("Press Play, then hit any pad along to the click.");
 }
@@ -884,7 +918,7 @@ function showWorkout(){
 }
 function exportData(){
   const o={v:1};
-  ["sw_hist","sw_time","sw_goals","sw_lat","sw_aud","sw_win","sw_cnt","sw_staff","sw_stick","sw_tools","sw_seen"].forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)o[k]=v}catch(e){}});
+  ["sw_hist","sw_time","sw_goals","sw_lat","sw_aud","sw_win","sw_cnt","sw_staff","sw_stick","sw_tools","sw_seen","sw_charts","sw_chartlast"].forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)o[k]=v}catch(e){}});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([JSON.stringify(o)],{type:"application/json"}));
   a.download="stickwork-progress-"+dayKey(Date.now())+".json";
@@ -893,7 +927,7 @@ function exportData(){
 async function importData(f){
   try{
     const o=JSON.parse(await f.text());
-    const ok=["sw_hist","sw_time","sw_goals","sw_lat","sw_aud","sw_win","sw_cnt","sw_staff","sw_stick","sw_tools","sw_seen"];
+    const ok=["sw_hist","sw_time","sw_goals","sw_lat","sw_aud","sw_win","sw_cnt","sw_staff","sw_stick","sw_tools","sw_seen","sw_charts","sw_chartlast"];
     if(!o||o.v!==1)throw new Error("not a backup");
     ok.forEach(k=>{if(typeof o[k]==="string")localStorage.setItem(k,o[k])});
     showStats();say("Progress restored. Reload the app to apply all settings.");
@@ -1004,6 +1038,7 @@ function assignStick(out){
   });
 }
 const NEWS=[
+{v:"1.8.0",items:["New From chords button: paste chords from Ultimate Guitar or type your own, pick a style and tempo, and Stickwork writes a drum part for them. Chord names show above the staff and a bass and chord backing plays along. Verses play lighter and choruses bigger, with fills and a crash and stop ending.","You can now open MuseScore (MusicXML) and Guitar Pro files (.gp, .gp3, .gp4, .gp5) from Tools, Open file. Only the drum part is used. PDFs are pictures, so they cannot be read.","6/8 and other eighth-note time signatures in MIDI files now count their beats properly.","Typing in a text box no longer plays drum sounds."]},
 {v:"1.7.1",items:["Runs where the app plays the drums for you (Play drums for me) are now listen-only. They are not saved to your progress, accuracy history or practice time, and the tempo trainer will not speed up from them. Only what you play yourself counts."]},
 {v:"1.7.0",items:["Easier to start: a welcome card on first use, a ? button with a quick-start guide, and the less-used controls tucked under Tools (it remembers if you open it).","Big Perfect, Early, Late and Miss feedback right where you hit.","Kick notes are now easy to see, and the R and L sticking letters sit in two tidy rows under the staff.","After a lesson run you get a Next lesson button. Practice runs end with a nudge to try it at full speed.","The app pauses by itself when you switch away from it, and when you open a menu.","Lessons tell you which pads you will play. Bigger touch targets, short pad names on small phones, and better support for screen readers.","Updates are now reliable: tapping Update always gives you the newest version."]},
 {v:"1.6.0",items:["The staff now has stems and beams, so eighth and sixteenth notes read like a normal drum chart.","Lessons show R and L sticking hints on the lanes and on the staff. You can switch them off in Settings.","This What’s new panel appears after each update. Tap What’s new in Settings to see it again.","New script, audio2drums.py, turns an mp3 or mp4 into a drum MIDI file you can load here."]},
@@ -1038,7 +1073,7 @@ function frame(){
     if(tPlay>15000){addTime(tPlay/1000);tPlay=0}
     for(const n of notes){
       if(n.t>songTime+.2+aud/1000*rate)break;
-      if(!practice&&!n.j&&n.t<songTime-win[2]){n.j=1;n.r="miss";jc++;misses++;combo=0;ls[n.l].m++;missT.push(n.t);stat();fbSet(n.l,"Miss","#d64550")}
+      if(!practice&&!n.j&&n.t<songTime-win[2]){n.j=1;n.r="miss";jc++;misses++;combo=0;ls[n.l].m++;missT.push(n.t);stat();if(!hear)fbSet(n.l,"Miss","#d64550")}
       if((hear||!focus[n.l])&&!n.s&&n.t<=songTime+aud/1000*rate&&(!loopOn||loopA==null||loopB==null||n.t<loopB)){n.s=1;snd(n.l,Math.max(0,(n.t-songTime)/rate-aud/1000))}
       if(n.s===1&&n.t<=songTime){n.s=2;flash[n.l]=1}
     }
@@ -1084,6 +1119,7 @@ L.forEach((l,i)=>{
 });
 addEventListener("keydown",e=>{
   if(e.repeat||e.metaKey||e.ctrlKey)return;
+  const tg=e.target&&e.target.tagName;if(tg==="INPUT"&&e.target.type!=="checkbox"||tg==="TEXTAREA"||tg==="SELECT")return;
   const i=L.findIndex(l=>l.k===e.key.toLowerCase());
   if(i>=0){e.preventDefault();hit(i,e.timeStamp)}
 });
@@ -1118,11 +1154,307 @@ $("midi").onclick=async()=>{
   }catch(e){say("MIDI permission was denied.")}
 };
 
+/* ---------- score files (MuseScore, Guitar Pro) ---------- */
+let atP=null;
+function loadAT(){
+  if(window.alphaTab)return Promise.resolve();
+  if(atP)return atP;
+  atP=new Promise((res,rej)=>{
+    const urls=["alphatab.min.js","https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.9.0/dist/alphaTab.min.js"];let i=0;
+    const next=()=>{
+      if(i>=urls.length){atP=null;rej(new Error("the score reader could not be loaded. Connect to the internet once and try again"));return}
+      const s=document.createElement("script");s.src=urls[i++];
+      s.onload=()=>window.alphaTab?res():next();
+      s.onerror=()=>{s.remove();next()};
+      document.head.appendChild(s);
+    };
+    next();
+  });
+  return atP;
+}
+async function scoreToMidi(buf){
+  await loadAT();
+  const st=new alphaTab.Settings();
+  let sc;
+  try{sc=alphaTab.importer.ScoreLoader.loadScoreFromBytes(new Uint8Array(buf),st)}
+  catch(e){throw new Error("that score file could not be read ("+(e&&e.message?e.message:"unknown format")+")")}
+  if(!sc.tracks.some(t=>t.staves.some(s=>s.isPercussion)))
+    throw new Error("this score has no drum part. Tracks found: "+(sc.tracks.map(t=>t.name||"unnamed").join(", ")||"none"));
+  const mf=new alphaTab.midi.MidiFile();
+  new alphaTab.midi.MidiFileGenerator(sc,st,new alphaTab.midi.AlphaSynthMidiFileHandler(mf,true)).generate();
+  return mf.toBinary().slice().buffer;
+}
+async function parseAny(buf,name){
+  const ext=(name.split(".").pop()||"").toLowerCase();
+  if(ext==="pdf")throw new Error("a PDF is a picture of the music, so the notes cannot be read from it. In MuseScore use Download, then MIDI or MusicXML instead");
+  if(["mp3","wav","m4a","aac","ogg","flac","mp4","mov","webm"].includes(ext))throw new Error("that is audio, not notes. Turn it into a drum MIDI file first with audio2drums.py");
+  if(["gp","gp3","gp4","gp5","gpx","xml","musicxml","mxl"].includes(ext)){
+    const r=parseMidi(await scoreToMidi(buf));
+    if(!r.notes.length)throw new Error("the drum part has no notes I can map to the kit");
+    r.usedAll=false;return r;
+  }
+  return parseMidi(buf);
+}
+
+/* ---------- chord charts to drums ---------- */
+const NPC={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+const CHORD_RE=/^([A-G])([#b♯♭]?)((?:maj|min|dim|aug|sus|add|M|m|-|\+|°|ø|Δ|o|\d+|[#b♯♭]\d+|\(|\)|,)*)(?:\/([A-G])([#b♯♭]?))?$/;
+const accPc=a=>a==="#"||a==="♯"?1:a==="b"||a==="♭"?-1:0;
+function parseChord(tok){
+  const m=CHORD_RE.exec(tok);if(!m)return null;
+  const root=(NPC[m[1]]+accPc(m[2])+12)%12,q=(m[3]||"").replace(/[(),]/g,"");
+  const minor=/^(min|m(?!aj)|-)/.test(q),dim=/dim|°|ø|o/.test(q),aug=/aug|\+/.test(q);
+  let third=(minor||dim)?3:4;
+  if(/sus2/.test(q))third=2;else if(/sus/.test(q))third=5;
+  const iv=[0,third,dim?6:aug?8:7],base=q.replace(/add\d+/g,"");
+  if(/[b♭]5/.test(q))iv[2]=6;
+  if(/[#♯]5/.test(q))iv[2]=8;
+  if(/maj\d|M\d|Δ/.test(q))iv.push(11);
+  else if(/ø/.test(q))iv.push(10);
+  else if(dim&&/7/.test(base))iv.push(9);
+  else if(/(7|9|11|13)/.test(base))iv.push(10);
+  if(/6/.test(base))iv.push(9);
+  if(/9/.test(q))iv.push(14);
+  const bass=m[4]?(NPC[m[4]]+accPc(m[5])+12)%12:root;
+  return {n:tok,root,iv:[...new Set(iv)],bass};
+}
+const SEC_RE=/^\s*[\[(]\s*(?:intro|verse|pre[- ]?chorus|chorus|bridge|solo|interlude|instrumental|outro|hook|refrain|breakdown|tag|coda|ending)\b[^\]\)\n]*[\])]\s*:?\s*$|^\s*(?:intro|verse|pre[- ]?chorus|chorus|bridge|solo|interlude|instrumental|outro|hook|refrain|breakdown|coda|ending)(?:\s*\d+)?\s*:?\s*$/i;
+const SEC_INLINE=/^\s*[\[(]?\s*((?:intro|verse|pre[- ]?chorus|chorus|bridge|solo|interlude|instrumental|outro|hook|refrain|breakdown|tag|coda|ending)\b[^\]):]*)[\])]?\s*:\s*(.+)$/i;
+const secKind=s=>{s=s.toLowerCase();return /pre/.test(s)?"pre":/chorus|hook|refrain/.test(s)?"chorus":/verse/.test(s)?"verse":/intro/.test(s)?"intro":/bridge|breakdown/.test(s)?"bridge":/solo|interlude|instrumental/.test(s)?"solo":"outro"};
+function parseChart(text,per){
+  per=Math.max(1,per|0);
+  const bars=[],BAR=/^[|:]+$/,REP=/^\(?[x×](\d+)\)?$|^(\d+)[x×]$/i,SKIP=/^(N\.?C\.?|%|-|–|—|\/|\.\.\.)$/i;
+  let sec="Verse",kind="verse",fresh=false,heads=0;
+  for(const raw of String(text||"").split(/\r?\n/)){
+    let line=raw.trim();if(!line)continue;
+    let head=null;const m=SEC_INLINE.exec(line);
+    if(SEC_RE.test(line)){head=line.replace(/[\[\]():]/g,"").trim();line=""}
+    else if(m){head=m[1].trim();line=m[2]}
+    if(head!==null){sec=head.replace(/\b\w/g,c=>c.toUpperCase());kind=secKind(head);fresh=true;heads++}
+    if(!line)continue;
+    const toks=line.replace(/\|/g," | ").replace(/:/g," : ").split(/\s+/).filter(Boolean);
+    let rep=1,ok=true,hasBar=false;const groups=[[]];
+    for(const t of toks){
+      if(BAR.test(t)){hasBar=true;if(groups[groups.length-1].length)groups.push([]);continue}
+      const r=REP.exec(t);if(r){rep=Math.min(16,+(r[1]||r[2]));continue}
+      if(SKIP.test(t))continue;
+      const c=parseChord(t);if(!c){ok=false;break}
+      groups[groups.length-1].push(c);
+    }
+    if(!ok||!groups.some(g=>g.length))continue;
+    const list=[];
+    if(hasBar){for(const g of groups)if(g.length)list.push(g)}
+    else{const all=groups[0];for(let i=0;i<all.length;i+=per)list.push(all.slice(i,i+per))}
+    for(let r=0;r<rep;r++)for(const g of list){
+      bars.push({sec,kind,start:fresh,ch:g.map((c,i)=>({c,p:i/g.length}))});fresh=false;
+    }
+  }
+  if(bars.length)bars[0].start=heads>0;
+  if(!heads)bars.forEach(b=>b.start=false);
+  return {bars,heads};
+}
+/* Drum grooves per time signature. Each style has three levels: light, medium, big. Letters are the same
+   lane codes the lessons use: H hat, O open hat, Y ride, K kick, S snare, R rim, C crash, P hat foot, 1 to 4 toms. */
+const CST={
+"4/4":{ts:4,styles:[
+ {id:"rock",n:"Rock",bpm:100,r:4,p:[
+  {H:"x.x.x.x.x.x.x.x.",K:"x.......x.......",S:"....x.......x..."},
+  {H:"x.x.x.x.x.x.x.x.",K:"x.......x.x.....",S:"....x.......x..."},
+  {H:"x.x.x.x.x.x.x...",O:"..............x.",K:"x.x.....x.x.....",S:"....x.......x..."}]},
+ {id:"pop",n:"Pop",bpm:100,r:4,p:[
+  {H:"x.x.x.x.x.x.x.x.",K:"x.....x...x.....",R:"....x.......x..."},
+  {H:"x.x.x.x.x.x.x.x.",K:"x.....x...x.....",S:"....x.......x..."},
+  {H:"x.x.x.x.x.x.x...",O:"..............x.",K:"x.....x.x.x.....",S:"....x.......x..."}]},
+ {id:"ballad",n:"Ballad (slow half-time)",bpm:70,r:4,p:[
+  {H:"x...x...x...x...",K:"x.......x.......",R:"........x......."},
+  {H:"x.x.x.x.x.x.x.x.",K:"x.......x.x.....",S:"........x......."},
+  {Y:"x.x.x.x.x.x.x.x.",K:"x.......x.x.....",S:"........x......."}]},
+ {id:"funk",n:"Funk",bpm:95,r:4,p:[
+  {H:"xxxxxxxxxxxxxxxx",K:"x..x..x...x.....",S:"....x.......x..."},
+  {H:"xxxxxxxxxxxxxxxx",K:"x..x..x..x.x....",S:"....x.......x..."},
+  {H:"xxx.xxx.xxx.xxx.",O:"...x...x...x...x",K:"x..x..x..x.x..x.",S:"....x.......x..x"}]},
+ {id:"disco",n:"Disco",bpm:110,r:4,p:[
+  {H:"x.x.x.x.x.x.x.x.",K:"x...x...x...x...",S:"....x.......x..."},
+  {H:"x...x...x...x...",O:"..x...x...x...x.",K:"x...x...x...x...",S:"....x.......x..."},
+  {H:"x...x...x...x...",O:"..x...x...x...x.",K:"x...x...x...x...",S:"....x.......x..x"}]},
+ {id:"punk",n:"Punk / fast rock",bpm:150,r:4,p:[
+  {H:"x.x.x.x.x.x.x.x.",K:"x.....x.x.....x.",S:"....x.......x..."},
+  {H:"x.x.x.x.x.x.x.x.",K:"x.x...x.x.x...x.",S:"....x.......x..."},
+  {Y:"x.x.x.x.x.x.x.x.",K:"x.x...x.x.x...x.",S:"....x.......x..."}]},
+ {id:"half",n:"Half-time",bpm:85,r:4,p:[
+  {H:"x.x.x.x.x.x.x.x.",K:"x.........x.....",S:"........x......."},
+  {H:"x.x.x.x.x.x.x.x.",K:"x.....x...x.....",S:"........x......."},
+  {Y:"x.x.x.x.x.x.x.x.",K:"x.....x...x..x..",S:"........x......."}]},
+ {id:"reggae",n:"Reggae one-drop",bpm:75,r:4,p:[
+  {H:"x.x.x.x.x.x.x.x.",K:"........x.......",R:"........x......."},
+  {H:"x.x.x.x.x.x.x.x.",K:"........x.......",R:"........x......."},
+  {H:"x.x.x.x.x.x.x...",O:"..............x.",K:"........x.......",S:"........x......."}]},
+ {id:"bossa",n:"Bossa nova",bpm:100,r:4,p:[
+  {Y:"x.x.x.x.x.x.x.x.",R:"x..x..x...x.x...",K:"x..x..x.x..x..x."},
+  {Y:"x.x.x.x.x.x.x.x.",R:"x..x..x...x.x...",K:"x..x..x.x..x..x."},
+  {Y:"x.x.x.x.x.x.x.x.",R:"x..x..x...x.x...",K:"x..x..x.x..x..x."}]},
+ {id:"shuffle",n:"Shuffle (triplet feel)",bpm:90,r:3,swing:1,p:[
+  {H:"x.xx.xx.xx.x",K:"x.....x.....",S:"...x.....x.."},
+  {Y:"x.xx.xx.xx.x",K:"x.....x.....",S:"...x.....x.."},
+  {Y:"x.xx.xx.xx.x",K:"x.....x...x.",S:"...x.....x.."}]}
+]},
+"3/4":{ts:3,styles:[
+ {id:"waltz",n:"Waltz",bpm:100,r:4,p:[
+  {H:"x.x.x.x.x.x.",K:"x...........",R:"....x...x..."},
+  {H:"x.x.x.x.x.x.",K:"x...........",S:"....x...x..."},
+  {Y:"x.x.x.x.x.x.",K:"x.......x...",S:"....x...x..."}]},
+ {id:"slow",n:"Slow waltz",bpm:66,r:4,p:[
+  {H:"x...x...x...",K:"x...........",R:"....x...x..."},
+  {H:"x.x.x.x.x.x.",K:"x...........",S:"........x..."},
+  {Y:"x.x.x.x.x.x.",K:"x.....x.....",S:"........x..."}]}
+]},
+"6/8":{ts:2,styles:[
+ {id:"g68",n:"6/8 groove",bpm:66,r:3,comp:1,p:[
+  {H:"xxxxxx",K:"x.....",R:"...x.."},
+  {H:"xxxxxx",K:"x.....",S:"...x.."},
+  {Y:"xxxxxx",K:"x.x...",S:"...x.."}]},
+ {id:"b68",n:"6/8 ballad",bpm:54,r:3,comp:1,p:[
+  {H:"x.xx.x",K:"x.....",R:"...x.."},
+  {H:"xxxxxx",K:"x.....",R:"...x.."},
+  {Y:"x.xx.x",K:"x.....",S:"...x.."}]}
+]},
+"12/8":{ts:4,styles:[
+ {id:"g128",n:"Slow 12/8",bpm:60,r:3,comp:1,p:[
+  {H:"xxxxxxxxxxxx",K:"x.....x.....",R:"...x.....x.."},
+  {H:"xxxxxxxxxxxx",K:"x.....x.....",S:"...x.....x.."},
+  {Y:"xxxxxxxxxxxx",K:"x.....x..x..",S:"...x.....x.."}]},
+ {id:"b128",n:"12/8 ballad",bpm:54,r:3,comp:1,p:[
+  {H:"x..x..x..x..",K:"x.....x.....",R:"...x.....x.."},
+  {H:"x.xx.xx.xx.x",K:"x.....x.....",R:"...x.....x.."},
+  {Y:"x..x..x..x..",K:"x.....x.....",S:"...x.....x.."}]}
+]}
+};
+function buildChartBars(ch,parsed,T,st){
+  const ts=T.ts,r=st.r,N=ts*r,total=parsed.bars.length,bars=[];
+  const pad=s=>((s||"")+".".repeat(N)).slice(0,N).split("");
+  const lvOf=b=>ch.dyn!=="auto"?+ch.dyn:(!parsed.heads?1:({intro:0,verse:0,pre:1,chorus:2,bridge:1,solo:2,outro:1}[b.kind]));
+  const every=ch.fill==="none"?0:+ch.fill;
+  let prevFill=false;
+  parsed.bars.forEach((b,i)=>{
+    const lv=lvOf(b),last=i===total-1;let m={};
+    for(const k in st.p[lv])m[k]=pad(st.p[lv][k]);
+    const nextStart=parsed.heads>0&&i+1<total&&parsed.bars[i+1].start;
+    const fill=!last&&!prevFill&&every>0&&(((i+1)%every===0)||nextStart)&&!(ch.end==="stop"&&i===total-1);
+    if(fill){
+      const fs=N-(ts>=4?2:1)*r,keepK=m.K&&m.K[fs]==="x",pos=[];
+      for(let j=fs;j<N;j++){if(st.swing){if(j%3!==1)pos.push(j)}else if(st.comp)pos.push(j);else if(j%2===0)pos.push(j)}
+      for(const k in m)for(let j=fs;j<N;j++)m[k][j]=".";
+      const n=pos.length,ln=new Array(n).fill("S");
+      if(lv>=2&&n>=4){ln[n-3]="1";ln[n-2]="2";ln[n-1]="3"}
+      pos.forEach((j,q)=>{(m[ln[q]]=m[ln[q]]||pad(""))[j]="x"});
+      if(keepK){(m.K=m.K||pad(""))[fs]="x"}
+    }
+    const secOpen=b.start&&parsed.heads>0&&["chorus","bridge","solo","outro"].includes(b.kind);
+    if((secOpen||(prevFill&&lv>=1))&&!last){
+      m.C=pad("");m.C[0]="x";for(const k of "HYO")if(m[k])m[k][0]=".";
+    }
+    b.ch.forEach((c,ci)=>{
+      if(!ci)return;
+      const step=Math.min(N-1,Math.round(c.p*N));
+      if((m.S&&m.S[step]==="x")||(m.R&&m.R[step]==="x"))return;
+      (m.K=m.K||pad(""))[step]="x";
+    });
+    if(last&&ch.end==="stop"){m={C:pad(""),K:pad("")};m.C[0]="x";m.K[0]="x"}
+    const o={};for(const k in m)o[k]=m[k].join("");
+    bars.push({m:o,chords:b.ch,start:b.start&&parsed.heads>0?b.sec:"",fill});
+    prevFill=fill;
+  });
+  return bars;
+}
+const fm=n=>440*Math.pow(2,(n-69)/12);
+function openChart(ch){
+  const T=CST[ch.ts]||CST["4/4"],st=T.styles.find(s=>s.id===ch.style)||T.styles[0];
+  const parsed=parseChart(ch.text,+ch.per||1);
+  if(!parsed.bars.length){say("No chords found. Type them like  | Am | F | C | G |");return false}
+  if(parsed.bars.length>400){say("That is "+parsed.bars.length+" bars. Please keep a chart under 400 bars.");return false}
+  const bars=buildChartBars(ch,parsed,T,st);
+  const ts=T.ts,r=st.r,spb=ts*r,bpm=Math.min(200,Math.max(40,+ch.bpm||st.bpm)),bd0=60/bpm,sd=bd0/r;
+  const out=[],bk2=[],marks=[];
+  bars.forEach((b,bi)=>{
+    const t0=bi*spb*sd;
+    for(const k in b.m){const s=b.m[k];for(let i=0;i<spb;i++)if(s[i]==="x")out.push({t:t0+i*sd,l:LK[k]})}
+    const segs=b.chords.map((c,ci)=>({c:c.c,s:Math.round(c.p*spb),e:ci+1<b.chords.length?Math.round(b.chords[ci+1].p*spb):spb}));
+    segs.forEach((g,ci)=>{
+      marks.push({t:t0+g.s*sd,n:g.c.n,s:ci===0?b.start:"",b:ci===0});
+      bk2.push({t:t0+g.s*sd,d:Math.max(.1,(g.e-g.s)*sd*.95),f:g.c.iv.map(x=>fm(48+g.c.root+x)),w:"sine",v:.07});
+      const kk=b.m.K||"",hits=[];
+      for(let i=g.s;i<g.e;i++)if(kk[i]==="x")hits.push(i);
+      if(!hits.length||hits[0]>g.s)hits.unshift(g.s);
+      for(const i of hits)bk2.push({t:t0+i*sd,d:sd*r*.9,f:[fm(36+g.c.bass)],w:"triangle",v:.4});
+    });
+  });
+  out.sort((a,b)=>a.t-b.t);bk2.sort((a,b)=>a.t-b.t);
+  if(!out.length){say("Those chords did not produce any drum notes.");return false}
+  notes=out;endT=out[out.length-1].t+1.5;
+  beats=[];for(let k=0;k<=bars.length*ts+2;k++)beats.push(k*bd0);
+  back=bk2;chordMarks=marks;tsNum=ts;bd=bd0;baseBpm=bpm;assignStick(out);
+  loopA=loopB=null;loopOn=false;updLoop();
+  free=false;wq=null;songId="chart:"+ch.name;songName=ch.name;
+  $("title").textContent=ch.name+" · "+st.n+bestText();
+  $("empty").style.display="none";
+  $("bkOn").checked=true;bump(100);reset();$("play").textContent="Play";
+  say(`${ch.name} · ${bars.length} bars · ${ch.ts} ${st.n} · ${bpm} BPM. Chord names show above the staff.`);
+  return true;
+}
+const CHART_DEF={name:"My chord chart",text:"",ts:"4/4",bpm:0,style:"rock",per:1,dyn:"auto",fill:"4",end:"stop"};
+function showChords(pre){
+  const ch=Object.assign({},CHART_DEF,pre||jget("sw_chartlast",{}));
+  if(!CST[ch.ts])ch.ts="4/4";
+  const saved=jget("sw_charts",{}),names=Object.keys(saved);
+  const opt=(arr,v)=>arr.map(([val,lab])=>`<option value="${val}"${String(val)===String(v)?" selected":""}>${lab}</option>`).join("");
+  panel(`<h2>Chords to drums</h2>
+  <p style="margin:0 0 6px;color:var(--mute);font-size:13px">Paste chords from Ultimate Guitar, or type your own. Use | between bars, or put one chord per bar. Headings like [Verse] and [Chorus] make the drums play bigger or lighter.</p>
+  <textarea id="cText" spellcheck="false" autocapitalize="off" placeholder="[Verse]&#10;| Am | F | C | G |&#10;[Chorus]&#10;| F C | G Am |">${esc(ch.text)}</textarea>
+  <div id="cInfo" class="cinfo"></div>
+  <div class="fgrid">
+   <label>Name<input id="cName" type="text" value="${esc(ch.name)}"></label>
+   <label>Time<select id="cTs" class="btn">${opt(Object.keys(CST).map(k=>[k,k]),ch.ts)}</select></label>
+   <label>Style<select id="cSty" class="btn"></select></label>
+   <label>Tempo (BPM)<input id="cBpm" type="number" min="40" max="200" value="${ch.bpm||""}"></label>
+   <label>Chords per bar<select id="cPer" class="btn">${opt([[1,"One chord per bar"],[2,"Two chords per bar"],[4,"Four chords per bar"]],ch.per)}</select></label>
+   <label>Dynamics<select id="cDyn" class="btn">${opt([["auto","Follow the sections"],[0,"Always light"],[1,"Always medium"],[2,"Always big"]],ch.dyn)}</select></label>
+   <label>Fills<select id="cFill" class="btn">${opt([["4","Every 4 bars"],["8","Every 8 bars"],["none","No fills"]],ch.fill)}</select></label>
+   <label>Ending<select id="cEnd" class="btn">${opt([["stop","Crash and stop"],["keep","Keep playing"]],ch.end)}</select></label>
+  </div>
+  <p class="cnote">"Chords per bar" only applies to lines without | bar lines.</p>
+  <div class="btns"><button class="btn main" id="cGo">Build and practise</button><button class="btn" id="cSave">Save chart</button><button class="btn" id="rClose">Close</button></div>
+  ${names.length?`<h3>Saved charts</h3>`+names.map((n,i)=>`<div class="srow"><button class="btn" data-co="${i}">${esc(n)}</button><button class="btn" data-cd="${i}">Delete</button></div>`).join(""):""}`);
+  const rd=()=>({name:$("cName").value.trim()||"My chord chart",text:$("cText").value,ts:$("cTs").value,bpm:+$("cBpm").value||0,style:$("cSty").value,per:+$("cPer").value,dyn:$("cDyn").value,fill:$("cFill").value,end:$("cEnd").value});
+  const fillSty=(keep)=>{
+    const T=CST[$("cTs").value];
+    $("cSty").innerHTML=T.styles.map(s=>`<option value="${s.id}">${s.n}</option>`).join("");
+    if(keep&&T.styles.some(s=>s.id===keep))$("cSty").value=keep;
+    const s=T.styles.find(x=>x.id===$("cSty").value);if(!(keep&&ch.bpm))$("cBpm").value=s.bpm;
+  };
+  fillSty(ch.style);
+  const info=()=>{
+    const p=parseChart($("cText").value,+$("cPer").value);
+    if(!p.bars.length){$("cInfo").textContent=$("cText").value.trim()?"No chords found yet. Chords look like Am, F#m7, Bb or C/G.":"";return}
+    const secs=[];p.bars.forEach(b=>{if(b.start||!secs.length)secs.push([b.sec,0]);secs[secs.length-1][1]++});
+    $("cInfo").textContent=p.bars.length+" bars"+(p.heads?": "+secs.map(s=>s[0]+" ("+s[1]+")").join(", "):"")+". First chords: "+p.bars.slice(0,6).map(b=>b.ch.map(c=>c.c.n).join(" ")).join(" · ");
+  };
+  $("cText").oninput=info;$("cPer").onchange=info;info();
+  $("cTs").onchange=()=>{ch.bpm=0;fillSty()};
+  $("cSty").onchange=()=>{ch.bpm=0;const s=CST[$("cTs").value].styles.find(x=>x.id===$("cSty").value);$("cBpm").value=s.bpm};
+  $("rClose").onclick=closePanel;
+  $("cGo").onclick=()=>{const c=rd();jset("sw_chartlast",c);if(!parseChart(c.text,c.per).bars.length){$("cInfo").textContent="Add some chords first. Example:  | Am | F | C | G |";return}closePanel();openChart(c)};
+  $("cSave").onclick=()=>{const c=rd();const all=jget("sw_charts",{});all[c.name]=c;jset("sw_charts",all);jset("sw_chartlast",c);showChords(c);say("Saved chart: "+c.name)};
+  document.querySelectorAll("#resCard [data-co]").forEach(b=>b.onclick=()=>showChords(saved[names[+b.dataset.co]]));
+  document.querySelectorAll("#resCard [data-cd]").forEach(b=>b.onclick=()=>{const all=jget("sw_charts",{});delete all[names[+b.dataset.cd]];jset("sw_charts",all);showChords(rd())});
+}
+
 $("mid").onchange=async e=>{
   const f=e.target.files[0];if(!f)return;
   try{
-    const buf=await f.arrayBuffer();const r=parseMidi(buf);
+    say("Reading "+f.name+"…");
+    const buf=await f.arrayBuffer();const r=await parseAny(buf,f.name);
     if(!r.notes.length)throw new Error("no drum notes found");
+    chordMarks=[];
     notes=r.notes;endT=notes[notes.length-1].t+1.5;
     beats=r.beats;tsNum=r.tsNum;bd=beats.length>1?beats[1]-beats[0]:.5;
     loopA=loopB=null;loopOn=false;updLoop();
@@ -1208,6 +1540,7 @@ $("audD").value=aud;$("audV").textContent=aud+" ms";
 $("audD").oninput=e=>{aud=+e.target.value;$("audV").textContent=aud+" ms";try{localStorage.setItem("sw_aud",aud)}catch(err){}};
 $("padSnd").onchange=e=>{soundAll=e.target.checked};
 $("freeB").onclick=showFree;
+$("chordB").onclick=()=>showChords();
 $("helpB").onclick=showHelp;
 $("emptyHelp").onclick=showHelp;
 $("emptyGo").onclick=()=>showLessons(0);
@@ -1241,7 +1574,7 @@ showStats();
 songTime=-2;resize();requestAnimationFrame(frame);
 </script>
 <script>
-const APP_VERSION="1.7.1";
+const APP_VERSION="1.8.0";
 document.getElementById("ver").textContent="v"+APP_VERSION;
 try{
   const prev=localStorage.getItem("sw_ver");
