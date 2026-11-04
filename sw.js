@@ -1,5 +1,5 @@
 // Bump VERSION here and APP_VERSION in index.html together for every release.
-const VERSION = "1.8.0";
+const VERSION = "1.9.0";
 const CACHE = "stickwork-" + VERSION;
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 // Loaded only when you open a MuseScore or Guitar Pro file. Kept for offline use if it is present.

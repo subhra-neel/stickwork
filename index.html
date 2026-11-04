@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<!-- Stickwork v1.8.0 -->
+<!-- Stickwork v1.9.0 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Stickwork – drum practice</title>
@@ -116,6 +116,7 @@ summary{cursor:pointer}
     <button class="btn" id="songs">Songs</button>
     <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="trn" type="checkbox" style="display:inline;margin:0"> Speed trainer</label>
     <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="bkOn" type="checkbox" checked style="display:inline;margin:0"> Backing music</label>
+    <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="simp" type="checkbox" checked style="display:inline;margin:0"> Keep drum parts playable</label>
   </div>
   <div class="row"><span>Position</span><input id="seek" type="range" min="0" max="1000" value="0" aria-label="Song position"><b id="pos">0:00</b></div>
   <div class="bar" style="padding-top:4px">
@@ -191,14 +192,14 @@ function fbSet(l,s,c){fbs.push({l,s,c,t:performance.now()});if(fbs.length>8)fbs.
 try{lat=+localStorage.getItem("sw_lat")||0;$("lat").value=lat;$("latV").textContent=lat+" ms"}catch(e){}
 
 /* ---------- MIDI parsing ---------- */
-function parseMidi(buf){
+function parseMidi(buf,opt){opt=opt||{};
   const d=new DataView(buf);let p=0;
   const str=n=>{let s="";for(let i=0;i<n;i++)s+=String.fromCharCode(d.getUint8(p++));return s};
   const vl=()=>{let v=0,b;do{b=d.getUint8(p++);v=(v<<7)|(b&127)}while(b&128);return v};
   if(str(4)!=="MThd")throw new Error("not a MIDI file");
   p+=4;p+=2;const ntrk=d.getUint16(p);p+=2;const div=d.getUint16(p);p+=2;
   if(div&0x8000)throw new Error("SMPTE timing is not supported");
-  const raw=[],tempos=[[0,500000]];let tsNum=4,tsDen=4,tsSet=false;
+  const raw=[],open={},tempos=[[0,500000]];let tsNum=4,tsDen=4,tsSet=false;
   for(let t=0;t<ntrk;t++){
     if(str(4)!=="MTrk")throw new Error("bad track header");
     const len=d.getUint32(p);p+=4;const end=p+len;let tick=0,run=0;
@@ -215,7 +216,11 @@ function parseMidi(buf){
       else{
         const hi=s&0xF0;
         if(hi===0xC0||hi===0xD0)p+=1;
-        else{const a=d.getUint8(p++),b=d.getUint8(p++);if(hi===0x90&&b>0)raw.push({tick,n:a,ch:s&15})}
+        else{
+          const a=d.getUint8(p++),b=d.getUint8(p++);
+          if(hi===0x90&&b>0){const o={tick,n:a,ch:s&15,v:b,end:-1};raw.push(o);open[((s&15)<<7)|a]=o}
+          else if(hi===0x80||(hi===0x90&&b===0)){const o=open[((s&15)<<7)|a];if(o&&o.end<0)o.end=tick}
+        }
       }
     }
     p=end;
@@ -225,19 +230,27 @@ function parseMidi(buf){
   for(const [tk,m] of tempos){sec+=(tk-last)*mpq/1e6/div;last=tk;mpq=m;map.push({tk,sec,mpq})}
   const toSec=tk=>{let e=map[0];for(const x of map){if(x.tk<=tk)e=x;else break}return e.sec+(tk-e.tk)*e.mpq/1e6/div};
   const drums=raw.filter(x=>x.ch===9);
+  let tonal=false;
+  if(!drums.length&&raw.length){
+    const mapped=raw.filter(x=>noteLane[x.n]!==undefined).length,pit=new Set(raw.map(x=>x.n)).size;
+    tonal=opt.forceTonal||!(mapped/raw.length>=.95&&pit<=16);
+  }
   const src=drums.length?drums:raw;
   const out=[];
-  for(const x of src){const l=noteLane[x.n];if(l!==undefined)out.push({t:toSec(x.tick),l})}
+  if(!tonal)for(const x of src){const l=noteLane[x.n];if(l!==undefined)out.push({t:toSec(x.tick),l})}
   out.sort((a,b)=>a.t-b.t);
   const lastT=new Array(L.length).fill(-1),clean=[];
   for(const n of out){if(n.t-lastT[n.l]<0.012)continue;lastT[n.l]=n.t;clean.push(n)}
-  const lastN=clean.length?clean[clean.length-1].t:0,beats=[];
+  const pitches=tonal?raw.filter(x=>x.ch!==9).map(x=>{const t=toSec(x.tick);return {t,d:Math.max(.05,toSec(x.end>=0?x.end:x.tick+div)-t),n:x.n,v:x.v}}):null;
+  let lastN=clean.length?clean[clean.length-1].t:0;
+  if(tonal)for(const q of pitches)if(q.t>lastN)lastN=q.t;
+  const beats=[];
   let unit=div,tsOut=tsNum;
   if(tsDen===8){if(tsNum>=6&&tsNum%3===0){unit=div*1.5;tsOut=tsNum/3}else unit=div/2}
   else if(tsDen===2)unit=div*2;
   else if(tsDen===16)unit=div/4;
   for(let k=0;k<40000;k++){const t=toSec(k*unit);beats.push(t);if(t>lastN+2)break}
-  return {notes:clean,beats,tsNum:tsOut,bpm:Math.round(60e6/tempos[tempos.length>1?1:0][1]*div/unit),usedAll:!drums.length};
+  return {notes:clean,beats,tsNum:tsOut,bpm:Math.round(60e6/tempos[tempos.length>1?1:0][1]*div/unit),usedAll:!drums.length,tonal,pitches};
 }
 
 /* ---------- sound ---------- */
@@ -840,7 +853,7 @@ function showHelp(){
   <ol><li>Use a USB cable (a USB-C adapter on a tablet).</li><li>Open Stickwork in Chrome and tap <b>Connect drum kit</b>. Allow MIDI access.</li><li>Hit a pad. Its lane should light up.</li><li>Open Settings and run <b>Calibrate hits</b> once.</li></ol>
   <p>If a pad does nothing, the message line shows its note number. Unplug and re-plug the cable, then try again.</p>
   <h3>Getting music in</h3>
-  <ul><li><b>From chords:</b> paste chords from Ultimate Guitar, or type them like | Am | F | C | G |. Pick a style and Stickwork writes the drums.</li><li><b>MuseScore:</b> download the MIDI or MusicXML file, then Tools, Open file.</li><li><b>Songsterr:</b> open the Guitar Pro file (.gp, .gp5) you downloaded. Only the drum track is used.</li><li><b>PDF:</b> a PDF is a picture, so notes cannot be read from it. Use MIDI or MusicXML instead.</li></ul>
+  <ul><li><b>From chords:</b> paste chords from Ultimate Guitar, or type them like | Am | F | C | G |. Pick a style and Stickwork writes the drums.</li><li><b>MuseScore:</b> download the MIDI or MusicXML file, then Tools, Open file.</li><li><b>Songsterr:</b> open the Guitar Pro file (.gp, .gp5) you downloaded. Only the drum track is used.</li><li><b>PDF:</b> a PDF is a picture, so notes cannot be read from it. Use MIDI or MusicXML instead.</li><li><b>No drums in the file, or an mp3:</b> Stickwork guesses the chords bar by bar and opens them in From chords so you can correct them and build a drum part.</li></ul>
   <h3>Headphones</h3>
   <p>Bluetooth headphones add a delay. Use the module's headphone jack for the drums, and raise Settings, Audio delay until the click lines up.</p>
   <h3>Keyboard keys</h3>
@@ -1038,6 +1051,7 @@ function assignStick(out){
   });
 }
 const NEWS=[
+{v:"1.9.0",items:["Open file now takes songs with no drum part: a MIDI or score of a melody (such as a harmonica or piano line), and audio files (mp3, wav, m4a, mp4). Stickwork guesses a chord for each bar and opens it in From chords, where you can fix any chord before building the drums.","Imported drum parts are trimmed so they can be played with two hands and two feet (no more than two hand notes at once). Switch this off under Tools, Keep drum parts playable.","Chords guessed from audio are a rough guess. Check them against the song."]},
 {v:"1.8.0",items:["New From chords button: paste chords from Ultimate Guitar or type your own, pick a style and tempo, and Stickwork writes a drum part for them. Chord names show above the staff and a bass and chord backing plays along. Verses play lighter and choruses bigger, with fills and a crash and stop ending.","You can now open MuseScore (MusicXML) and Guitar Pro files (.gp, .gp3, .gp4, .gp5) from Tools, Open file. Only the drum part is used. PDFs are pictures, so they cannot be read.","6/8 and other eighth-note time signatures in MIDI files now count their beats properly.","Typing in a text box no longer plays drum sounds."]},
 {v:"1.7.1",items:["Runs where the app plays the drums for you (Play drums for me) are now listen-only. They are not saved to your progress, accuracy history or practice time, and the tempo trainer will not speed up from them. Only what you play yourself counts."]},
 {v:"1.7.0",items:["Easier to start: a welcome card on first use, a ? button with a quick-start guide, and the less-used controls tucked under Tools (it remembers if you open it).","Big Perfect, Early, Late and Miss feedback right where you hit.","Kick notes are now easy to see, and the R and L sticking letters sit in two tidy rows under the staff.","After a lesson run you get a Next lesson button. Practice runs end with a nudge to try it at full speed.","The app pauses by itself when you switch away from it, and when you open a menu.","Lessons tell you which pads you will play. Bigger touch targets, short pad names on small phones, and better support for screen readers.","Updates are now reliable: tapping Update always gives you the newest version."]},
@@ -1178,22 +1192,223 @@ async function scoreToMidi(buf){
   let sc;
   try{sc=alphaTab.importer.ScoreLoader.loadScoreFromBytes(new Uint8Array(buf),st)}
   catch(e){throw new Error("that score file could not be read ("+(e&&e.message?e.message:"unknown format")+")")}
-  if(!sc.tracks.some(t=>t.staves.some(s=>s.isPercussion)))
-    throw new Error("this score has no drum part. Tracks found: "+(sc.tracks.map(t=>t.name||"unnamed").join(", ")||"none"));
+  const hasDrums=sc.tracks.some(t=>t.staves.some(s=>s.isPercussion));
   const mf=new alphaTab.midi.MidiFile();
   new alphaTab.midi.MidiFileGenerator(sc,st,new alphaTab.midi.AlphaSynthMidiFileHandler(mf,true)).generate();
-  return mf.toBinary().slice().buffer;
+  return {midi:mf.toBinary().slice().buffer,hasDrums};
 }
 async function parseAny(buf,name){
   const ext=(name.split(".").pop()||"").toLowerCase();
   if(ext==="pdf")throw new Error("a PDF is a picture of the music, so the notes cannot be read from it. In MuseScore use Download, then MIDI or MusicXML instead");
-  if(["mp3","wav","m4a","aac","ogg","flac","mp4","mov","webm"].includes(ext))throw new Error("that is audio, not notes. Turn it into a drum MIDI file first with audio2drums.py");
+  if(["mp3","wav","m4a","aac","ogg","flac","mp4","mov","webm"].includes(ext))return {chart:await audioToChart(buf,name),audio:true};
+  let r;
   if(["gp","gp3","gp4","gp5","gpx","xml","musicxml","mxl"].includes(ext)){
-    const r=parseMidi(await scoreToMidi(buf));
-    if(!r.notes.length)throw new Error("the drum part has no notes I can map to the kit");
-    r.usedAll=false;return r;
+    const s=await scoreToMidi(buf);
+    r=parseMidi(s.midi,{forceTonal:!s.hasDrums});
+    if(!r.tonal){r.usedAll=false;if(!r.notes.length)throw new Error("the drum part has no notes I can map to the kit")}
+  }else r=parseMidi(buf);
+  if(r.tonal)return {chart:harmonize(r,name)};
+  return r;
+}
+
+/* ---------- make imported drum parts playable, and guess chords from melodies and audio ---------- */
+const HP=[9,5,6,0,10,4,3,3,2,2,9,7,0];
+function makePlayable(ns){
+  const out=[];let removed=0;
+  for(let i=0;i<ns.length;){
+    let j=i;while(j+1<ns.length&&ns[j+1].t-ns[i].t<.03)j++;
+    const g=ns.slice(i,j+1),seen=new Set(),hands=g.filter(n=>n.l!==12&&n.l!==3).sort((a,b)=>HP[b.l]-HP[a.l]),keep=[];
+    for(const n of hands){if(seen.has(n.l))continue;if(keep.length<2){keep.push(n);seen.add(n.l)}}
+    for(const n of g)if((n.l===12||n.l===3)&&!seen.has(n.l)){keep.push(n);seen.add(n.l)}
+    removed+=g.length-keep.length;out.push(...keep);i=j+1;
   }
-  return parseMidi(buf);
+  out.sort((a,b)=>a.t-b.t);
+  return {notes:out,removed};
+}
+const CN=["C","Db","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
+const MAJ_SCALE=[0,2,4,5,7,9,11];
+function chordName(root,minor){return CN[root]+(minor?"m":"")}
+function barsToText(bars,energy){
+  /* bars: array of arrays of chord names. energy: loudness or busyness per bar, used to label verses and choruses. */
+  const lines=[],ph=[];
+  for(let i=0;i<bars.length;i+=4)ph.push(i);
+  let labels=ph.map(()=>"");
+  if(energy&&ph.length>=3){
+    const e=ph.map(i=>{const s=energy.slice(i,i+4);return s.reduce((a,b)=>a+b,0)/s.length}),sorted=[...e].sort((a,b)=>a-b),med=sorted[sorted.length>>1];
+    if(med>0&&Math.max(...e)>=1.2*med&&Math.min(...e)<=.9*Math.max(...e)){
+      let prev="";labels=e.map(v=>{const l=v>=1.15*med?"Chorus":"Verse";const out=l!==prev?l:"";prev=l;return out});
+    }
+  }
+  ph.forEach((i,k)=>{
+    if(labels[k])lines.push("["+labels[k]+"]");
+    lines.push("| "+bars.slice(i,i+4).map(b=>b.join(" ")).join(" | ")+" |");
+  });
+  return lines.join("\n");
+}
+function styleFor(ts,bpm){return ts==="3/4"?"waltz":ts==="6/8"?"g68":ts==="12/8"?"g128":(bpm<85?"ballad":"rock")}
+/* melody notes (a MIDI or score with no drums) to a chord per bar */
+function harmonize(r,name){
+  const bt=r.beats,tsn=Math.max(1,r.tsNum),P=r.pitches;
+  const nbAll=Math.floor((bt.length-1)/tsn),bars=[];
+  const glob=new Array(12).fill(0);
+  for(const p of P)glob[p.n%12]+=Math.min(p.d,2);
+  let key=0,kb=-1;
+  for(let k=0;k<12;k++){const s=MAJ_SCALE.reduce((a,x)=>a+glob[(k+x)%12],0);if(s>kb){kb=s;key=k}}
+  const dia=new Set([[0,0],[2,1],[4,1],[5,0],[7,0],[9,1],[11,2]].filter(x=>x[1]<2).map(x=>((key+x[0])%12)*2+x[1]));
+  const cands=[];for(let rt=0;rt<12;rt++)for(let mn=0;mn<2;mn++)cands.push({rt,mn,tones:[rt,(rt+(mn?3:4))%12,(rt+7)%12]});
+  const hist=(t0,t1)=>{
+    const h=new Array(12).fill(0);let tot=0,low=null,cnt=0;
+    for(const p of P)if(p.t>=t0-.001&&p.t<t1-.001){cnt++;if(!low||p.n<low.n)low=p}
+    for(const p of P)if(p.t>=t0-.001&&p.t<t1-.001){const w=Math.max(.1,Math.min(p.d,2));h[p.n%12]+=w;tot+=w}
+    if(low){const w=Math.max(.1,Math.min(low.d,2))*.8;h[low.n%12]+=w;tot+=w}
+    return {h,tot,cnt};
+  };
+  const best=(H)=>{
+    let b=null,bs=-9;
+    for(const c of cands){
+      const inn=c.tones.reduce((a,x)=>a+H.h[x],0)/H.tot,s=inn-.4*(1-inn)+.15*H.h[c.rt]/H.tot+(dia.has(c.rt*2+c.mn)?.08:0);
+      if(s>bs){bs=s;b=c;b.cover=inn}
+    }
+    return {c:{...b},cover:b.cover};
+  };
+  const energy=[];let last=null,first=-1,lastB=-1;
+  for(let b=0;b<nbAll;b++){
+    const t0=bt[b*tsn],t1=bt[(b+1)*tsn],H=hist(t0,t1);
+    energy.push(H.cnt);
+    if(H.cnt>0){if(first<0)first=b;lastB=b}
+  }
+  if(first<0)throw new Error("there are no notes to build chords from");
+  for(let b=first;b<=lastB;b++){
+    const t0=bt[b*tsn],t1=bt[(b+1)*tsn],H=hist(t0,t1);
+    if(!H.cnt){bars.push(last?[last]:[chordName(key,0)]);continue}
+    const w=best(H);let names=[chordName(w.c.rt,w.c.mn)];
+    if(tsn>=4&&tsn%2===0&&H.cnt>=6){
+      const tm=bt[b*tsn+tsn/2],A=hist(t0,tm),B=hist(tm,t1);
+      if(A.cnt>=3&&B.cnt>=3){
+        const a=best(A),bb=best(B);
+        if((a.c.rt!==bb.c.rt||a.c.mn!==bb.c.mn)&&Math.min(a.cover,bb.cover)>=.85&&w.cover<=.7)names=[chordName(a.c.rt,a.c.mn),chordName(bb.c.rt,bb.c.mn)];
+      }
+    }
+    last=names[names.length-1];bars.push(names);
+  }
+  const ts=tsn===3?"3/4":(tsn===2?"6/8":"4/4"),bpm=Math.min(200,Math.max(40,r.bpm||90));
+  return {name:name.replace(/\.[^.]+$/,""),text:barsToText(bars,energy.slice(first,lastB+1)),ts,bpm,style:styleFor(ts,bpm),per:1,
+    note:`This file has no drum part, so Stickwork guessed one chord per bar from the notes (${bars.length} bars, about ${bpm} BPM). Check the chords, change anything that sounds wrong, then tap Build.`};
+}
+/* audio file to a chord per bar */
+function fft(re,im){
+  const n=re.length;
+  for(let i=1,j=0;i<n;i++){let bit=n>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;if(i<j){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t}}
+  for(let len=2;len<=n;len<<=1){
+    const ang=-2*Math.PI/len,wr=Math.cos(ang),wi=Math.sin(ang),h=len>>1;
+    for(let i=0;i<n;i+=len){
+      let cr=1,ci=0;
+      for(let k=0;k<h;k++){
+        const a=i+k,b=a+h,xr=re[b]*cr-im[b]*ci,xi=re[b]*ci+im[b]*cr;
+        re[b]=re[a]-xr;im[b]=im[a]-xi;re[a]+=xr;im[a]+=xi;
+        const t=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=t;
+      }
+    }
+  }
+}
+async function audioToChart(buf,name){
+  initAudio();
+  let ab;
+  try{ab=await ac.decodeAudioData(buf.slice(0))}catch(e){throw new Error("this browser could not decode that audio file")}
+  const df=Math.max(1,Math.round(ab.sampleRate/11025)),sr=ab.sampleRate/df;
+  const m=Math.floor(Math.min(ab.length,ab.sampleRate*420)/df),x=new Float32Array(m);
+  for(let c=0;c<ab.numberOfChannels;c++){
+    const d=ab.getChannelData(c);
+    for(let i=0;i<m;i++){let s=0;for(let k=0;k<df;k++)s+=d[i*df+k];x[i]+=s/df/ab.numberOfChannels}
+  }
+  const hann=N=>{const w=new Float32Array(N);for(let i=0;i<N;i++)w[i]=.5-.5*Math.cos(2*Math.PI*i/(N-1));return w};
+  const frames=async(N,hop,fn,label)=>{
+    const w=hann(N),re=new Float32Array(N),im=new Float32Array(N);let c=0;
+    for(let p=0;p+N<=m;p+=hop){
+      for(let i=0;i<N;i++){re[i]=x[p+i]*w[i];im[i]=0}
+      fft(re,im);fn(re,im,c++);
+      if(c%120===0){say(label+" "+Math.round(p/m*100)+"%");await new Promise(r=>setTimeout(r))}
+    }
+  };
+  /* 1. tempo and beat positions from note onsets */
+  const N1=1024,H1=256,fps=sr/H1,o=[],b0=Math.floor(100*N1/sr),b1=Math.min(N1/2-1,Math.floor(4000*N1/sr));
+  let prev=null;
+  await frames(N1,H1,(re,im)=>{
+    const mg=new Float32Array(b1-b0);let f=0;
+    for(let k=b0;k<b1;k++){mg[k-b0]=Math.log1p(Math.hypot(re[k],im[k]));if(prev)f+=Math.max(0,mg[k-b0]-prev[k-b0])}
+    prev=mg;o.push(f);
+  },"Finding the beat");
+  if(o.length<fps*8)throw new Error("that audio is too short to find a beat");
+  const on=o.map((v,i)=>{let s=0,c=0;for(let k=Math.max(0,i-11);k<Math.min(o.length,i+11);k++){s+=o[k];c++}return Math.max(0,v-s/c)});
+  const at=(arr,p)=>{if(p<0||p>=arr.length-1)return 0;const i=Math.floor(p),f=p-i;return arr[i]*(1-f)+arr[i+1]*f};
+  const acf=lag=>{let s=0,c=0;for(let i=0;i+lag<on.length;i++){s+=on[i]*at(on,i+lag);c++}return c?s/c:0};
+  let bpm=100,bs=-1;
+  for(let t=55;t<=190;t+=.5){
+    const lag=60/t*fps,wgt=Math.exp(-.5*Math.pow(Math.log2(t/100)/.8,2)),s=(acf(lag)+.5*acf(lag*2))*wgt;
+    if(s>bs){bs=s;bpm=t}
+  }
+  const Pf=60/bpm*fps;let off=0,os=-1;
+  for(let a=0;a<Pf;a+=.5){let s=0;for(let p=a;p<on.length-1;p+=Pf)s+=at(on,p);if(s>os){os=s;off=a}}
+  const tb=[];for(let p=off;p<on.length-1;p+=Pf)tb.push((p*H1+N1/2)/sr);
+  const Ps=60/bpm;
+  /* 2. note content (chroma) over time */
+  const N2=4096,H2=1024,c0=Math.ceil(60*N2/sr),c1=Math.floor(1100*N2/sr),chr=[],en=[];
+  await frames(N2,H2,(re,im)=>{
+    const c=new Float32Array(12);let e=0;
+    for(let k=c0;k<=c1;k++){
+      const f=k*sr/N2,mg=Math.hypot(re[k],im[k]);
+      c[((Math.round(12*Math.log2(f/440))+9)%12+12)%12]+=mg;e+=mg;
+    }
+    chr.push(c);en.push(e);
+  },"Listening for chords");
+  const tc=j=>(j*H2+N2/2)/sr;
+  const nbeat=tb.length-1,B=[],BE=[];
+  for(let k=0;k<nbeat;k++){
+    const t0=tb[k]+.05,t1=tb[k+1],c=new Float32Array(12);let n=0,e=0;
+    for(let j=0;j<chr.length;j++){const t=tc(j);if(t<t0)continue;if(t>=t1)break;for(let q=0;q<12;q++)c[q]+=chr[j][q];e+=en[j];n++}
+    if(!n){const j=Math.min(chr.length-1,Math.max(0,Math.round((tb[k]*sr-N2/2)/H2)));for(let q=0;q<12;q++)c[q]=chr[j][q];e=en[j];n=1}
+    let nr=0;for(let q=0;q<12;q++)nr+=c[q]*c[q];nr=Math.sqrt(nr)||1;
+    B.push(c.map(v=>v/nr));BE.push(e/n);
+  }
+  const emax=Math.max(...BE);
+  /* 3. best triad per beat, smoothed so chords do not flicker */
+  const tmpl=[];for(let r=0;r<12;r++)for(let mn=0;mn<2;mn++)tmpl.push([r,(r+(mn?3:4))%12,(r+7)%12]);
+  const sc=B.map(c=>tmpl.map(t=>(c[t[0]]+c[t[1]]+c[t[2]])/1.7321));
+  const S=24,pen=.12,dp=[],bp=[];
+  for(let k=0;k<nbeat;k++){
+    dp.push(new Float32Array(S));bp.push(new Int8Array(S));
+    for(let s=0;s<S;s++){
+      if(!k){dp[k][s]=sc[k][s];continue}
+      let b=-9,bi=0;
+      for(let q=0;q<S;q++){const v=dp[k-1][q]-(q===s?0:pen);if(v>b){b=v;bi=q}}
+      dp[k][s]=b+sc[k][s];bp[k][s]=bi;
+    }
+  }
+  const seq=new Array(nbeat);let cs=0,cb=-9;
+  for(let s=0;s<S;s++)if(dp[nbeat-1][s]>cb){cb=dp[nbeat-1][s];cs=s}
+  for(let k=nbeat-1;k>=0;k--){seq[k]=cs;cs=bp[k][cs]}
+  const loud=k=>BE[k]>.12*emax;
+  let k0=0;while(k0<nbeat&&!loud(k0))k0++;
+  let k1=nbeat-1;while(k1>k0&&!loud(k1))k1--;
+  if(k1-k0<8)throw new Error("I could not find enough music in that file");
+  /* 4. bar lines: choose the beat count that puts most chord changes on beat 1 */
+  let ph=0,ps=-1;
+  for(let p=0;p<4;p++){let s=0;for(let k=k0+1;k<=k1;k++)if(seq[k]!==seq[k-1]&&((k-p)%4+4)%4===0)s++;if(s>ps){ps=s;ph=p}}
+  const bars=[],energy=[];
+  let st=k0+((ph-k0)%4+4)%4;
+  if(st-k0>2)st-=4;if(st<k0)st=k0;
+  const cn=s=>chordName(Math.floor(s/2),s%2);
+  for(let k=st;k+3<=k1+1;k+=4){
+    const q=[seq[k],seq[k+1],seq[k+2],seq[k+3]];
+    let names;
+    if(q[0]===q[1]&&q[2]===q[3]&&q[0]!==q[2])names=[cn(q[0]),cn(q[2])];
+    else{const cnt={};q.forEach(v=>cnt[v]=(cnt[v]||0)+1);names=[cn(+Object.entries(cnt).sort((a,b)=>b[1]-a[1]||(+(b[0]===String(q[0]))-+(a[0]===String(q[0]))))[0][0])]}
+    bars.push(names);energy.push((BE[k]+BE[k+1]+BE[k+2]+BE[k+3])/4);
+  }
+  if(!bars.length)throw new Error("I could not find enough music in that file");
+  const rb=Math.round(bpm);
+  return {name:name.replace(/\.[^.]+$/,""),text:barsToText(bars,energy),ts:"4/4",bpm:Math.min(200,Math.max(40,rb)),style:styleFor("4/4",rb),per:1,
+    note:`Stickwork listened to the audio and guessed ${bars.length} bars of chords at about ${rb} BPM, assuming 4/4. This is a rough guess, so check it against the song, fix anything that sounds wrong and tap Build. If the tempo looks double or half, change the BPM.`};
 }
 
 /* ---------- chord charts to drums ---------- */
@@ -1408,6 +1623,7 @@ function showChords(pre){
   const saved=jget("sw_charts",{}),names=Object.keys(saved);
   const opt=(arr,v)=>arr.map(([val,lab])=>`<option value="${val}"${String(val)===String(v)?" selected":""}>${lab}</option>`).join("");
   panel(`<h2>Chords to drums</h2>
+  ${ch.note?`<p style="margin:0 0 8px;font-size:13px;background:var(--stage);border-radius:8px;padding:6px 8px">${esc(ch.note)}</p>`:""}
   <p style="margin:0 0 6px;color:var(--mute);font-size:13px">Paste chords from Ultimate Guitar, or type your own. Use | between bars, or put one chord per bar. Headings like [Verse] and [Chorus] make the drums play bigger or lighter.</p>
   <textarea id="cText" spellcheck="false" autocapitalize="off" placeholder="[Verse]&#10;| Am | F | C | G |&#10;[Chorus]&#10;| F C | G Am |">${esc(ch.text)}</textarea>
   <div id="cInfo" class="cinfo"></div>
@@ -1453,7 +1669,13 @@ $("mid").onchange=async e=>{
   try{
     say("Reading "+f.name+"…");
     const buf=await f.arrayBuffer();const r=await parseAny(buf,f.name);
+    if(r.chart){
+      if(!r.audio)saveSong(f.name,buf,f.name+"|chords");
+      e.target.value="";showChords(r.chart);say(r.audio?"Chords guessed from the audio. Check them, then Build.":"No drum part, so chords were guessed from the notes. Check them, then Build.");return;
+    }
     if(!r.notes.length)throw new Error("no drum notes found");
+    let simp="";
+    if($("simp").checked){const q=makePlayable(r.notes);if(q.removed){r.notes=q.notes;simp=` · ${q.removed} note${q.removed===1?"":"s"} left out so it can be played with two hands and two feet`}}
     chordMarks=[];
     notes=r.notes;endT=notes[notes.length-1].t+1.5;
     beats=r.beats;tsNum=r.tsNum;bd=beats.length>1?beats[1]-beats[0]:.5;
@@ -1462,7 +1684,7 @@ $("mid").onchange=async e=>{
     back=[];free=false;wq=null;baseBpm=r.bpm;$("tempo").dispatchEvent(new Event("input"));
     $("title").textContent=f.name+bestText();$("empty").style.display="none";
     reset();$("play").textContent="Play";
-    say(`${notes.length} notes · ${r.bpm} BPM`+(r.usedAll?" · no drum channel, used all notes":""));
+    say(`${notes.length} notes · ${r.bpm} BPM`+(r.usedAll?" · no drum channel, used all notes":"")+simp);
   }catch(err){say("Could not read that file: "+err.message)}
   e.target.value="";
 };
@@ -1540,6 +1762,8 @@ $("audD").value=aud;$("audV").textContent=aud+" ms";
 $("audD").oninput=e=>{aud=+e.target.value;$("audV").textContent=aud+" ms";try{localStorage.setItem("sw_aud",aud)}catch(err){}};
 $("padSnd").onchange=e=>{soundAll=e.target.checked};
 $("freeB").onclick=showFree;
+try{if(localStorage.getItem("sw_simp")==="0")$("simp").checked=false}catch(e){}
+$("simp").onchange=e=>{try{localStorage.setItem("sw_simp",e.target.checked?"1":"0")}catch(err){}say(e.target.checked?"Imported drum parts will be trimmed to two hands and two feet.":"Imported drum parts will be played exactly as written.")};
 $("chordB").onclick=()=>showChords();
 $("helpB").onclick=showHelp;
 $("emptyHelp").onclick=showHelp;
@@ -1574,7 +1798,7 @@ showStats();
 songTime=-2;resize();requestAnimationFrame(frame);
 </script>
 <script>
-const APP_VERSION="1.8.0";
+const APP_VERSION="1.9.0";
 document.getElementById("ver").textContent="v"+APP_VERSION;
 try{
   const prev=localStorage.getItem("sw_ver");
