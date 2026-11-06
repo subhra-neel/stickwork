@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<!-- Stickwork v1.9.0 -->
+<!-- Stickwork v1.10.0 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Stickwork – drum practice</title>
@@ -84,17 +84,48 @@ body.perf #perfBar{display:flex}
 #resCard .btns{flex-wrap:wrap}
 details{padding:0 10px 2px;color:var(--mute)}
 summary{cursor:pointer}
-#upd{display:none;position:fixed;z-index:40;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 8px);background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 12px;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 4px 18px #0006}
+#ed{display:none;position:fixed;inset:0;z-index:40;background:var(--bg);color:var(--ink);flex-direction:column;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+#ed.open{display:flex}
+#ed .bar{padding:5px 8px 1px}
+#ed .eb{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;flex:none}
+#ed .eb::-webkit-scrollbar{display:none}
+#ed .eb>*{flex:none;white-space:nowrap}
+#ed .edF{display:flex;gap:6px;align-items:center;color:var(--mute)}
+#ed .edIn{box-sizing:border-box;min-height:40px;font:inherit;font-weight:700;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 10px;-webkit-user-select:text;user-select:text}
+#edName{flex:1 1 9em!important;min-width:7em;width:9em}
+#ed .edNum{width:5.4em}
+#ed select.btn{padding:6px 8px}
+#ed .edChk{display:flex;gap:6px;align-items:center}
+#ed .edChk input{display:inline;margin:0}
+#ed .btn:disabled{opacity:.4;cursor:default}
+#edBarN{min-width:6.5em;text-align:center}
+#edScore{flex:1 1 0;min-height:96px;overflow-y:auto;margin:6px 8px 2px;border-radius:12px;background:var(--stage)}
+#edSc{position:sticky;top:0;display:block;width:100%;touch-action:pan-y}
+#edGrid{flex:2 1 0;min-height:170px;overflow:auto;margin:4px 8px 2px;border-radius:12px;background:var(--stage)}
+#edGrid .edRow{display:flex;width:max-content}
+#edLab{position:sticky;left:0;z-index:1;flex:none;touch-action:pan-x pan-y}
+#edG{flex:none;touch-action:pan-x pan-y}
+#edLens{display:flex;gap:6px}
+#edLens .btn{padding:6px 10px;font-size:13px}
+#edMsg{flex:none;padding:2px 12px 6px;color:var(--mute);font-size:13px;min-height:1.3em}
+#edSelBox,#edStepB{display:none}
+#edAsk{display:none;position:absolute;inset:0;background:#0008;align-items:center;justify-content:center;z-index:2;padding:16px}
+#edAsk>div{background:var(--panel);border-radius:16px;padding:18px;max-width:380px;width:100%;box-shadow:0 8px 30px #0008}
+#edAsk p{margin:0 0 10px}
+#edAsk .btns{display:flex;gap:8px;flex-wrap:wrap}
+@media (pointer:coarse){#ed .btn{min-height:44px}}
+#upd{display:none;position:fixed;z-index:50;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 8px);background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 12px;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 4px 18px #0006}
 #upd button{border:0;border-radius:9px;padding:7px 12px;font:inherit;font-weight:700;background:var(--bg);color:var(--ink);cursor:pointer}
 </style>
 </head>
 <body>
-<div id="upd" role="status"><span>A new version of Stickwork is ready.</span><button id="updBtn">Update</button></div>
+<div id="upd"><span>A new version of Stickwork is ready.</span><button id="updBtn">Update</button></div>
 <div class="bar scroll">
   <button class="btn main" id="lessonsB">Lessons</button>
   <button class="btn" id="workB">Daily workout</button>
   <button class="btn" id="freeB">Free play</button>
   <button class="btn" id="chordB">From chords</button>
+  <button class="btn" id="writeB">Write &amp; edit</button>
   <button class="btn" id="perfB">Performance</button>
   <button class="btn" id="midi">Connect drum kit</button>
   <button class="btn" id="prog">Progress</button>
@@ -139,9 +170,9 @@ summary{cursor:pointer}
   <canvas id="cv"></canvas>
   <div id="empty"><div>
     <p style="font-size:18px;color:var(--ink);font-weight:700">Ready to play some drums?</p>
-    <p>Start with a built-in lesson, turn chords into a drum part, or open your own MIDI, MuseScore or Guitar Pro file from Tools.</p>
+    <p>Start with a built-in lesson, turn chords into a drum part, write your own notation, or open your own MIDI, MuseScore or Guitar Pro file from Tools.</p>
     <p>Play with an e-drum kit, the pads below, or your keyboard.</p>
-    <div class="btns"><button class="btn main" id="emptyGo">Start a lesson</button><button class="btn" id="emptyHelp">How it works</button></div>
+    <div class="btns"><button class="btn main" id="emptyGo">Start a lesson</button><button class="btn" id="emptyWrite">Write my own</button><button class="btn" id="emptyHelp">How it works</button></div>
   </div></div>
 </div>
 <div id="pads"></div>
@@ -161,6 +192,39 @@ summary{cursor:pointer}
 <div class="row" style="padding:2px 0"><span>Version</span><b id="ver" style="min-width:0;text-align:left"></b></div>
 </details>
 
+<div id="ed" role="dialog" aria-label="Notation editor">
+  <div class="bar eb">
+    <button class="btn" id="edDone">Done</button>
+    <input id="edName" class="edIn" aria-label="Score name" maxlength="60">
+    <button class="btn" id="edUndo">↶ Undo</button>
+    <button class="btn" id="edRedo">↷ Redo</button>
+    <button class="btn" id="edPlay">▶ Hear bar</button>
+    <button class="btn main" id="edSong">Practise this</button>
+    <button class="btn" id="edSave">Save</button>
+    <button class="btn" id="edMidi">MIDI file</button>
+  </div>
+  <div id="edScore"><canvas id="edSc"></canvas><div id="edSpacer"></div></div>
+  <div class="bar eb">
+    <button class="btn" id="edPrevB" aria-label="Previous bar">‹</button><b id="edBarN"></b><button class="btn" id="edNextB" aria-label="Next bar">›</button>
+    <span class="edF">Time <select id="edTn" class="btn" aria-label="Beats in the bar"></select>/<select id="edTd" class="btn" aria-label="Beat note value"></select></span>
+    <label class="btn edChk"><input type="checkbox" id="edTsAll"> and every bar after</label>
+    <span class="edF">Grid <select id="edRes" class="btn" aria-label="Grid"></select></span>
+    <span class="edF">Tempo <input id="edBpm" type="number" min="20" max="300" step="1" class="edIn edNum" aria-label="Tempo from this bar"></span>
+    <button class="btn" id="ed_ins">+ Bar</button><button class="btn" id="ed_dup">Duplicate</button><button class="btn" id="ed_copy">Copy</button><button class="btn" id="ed_paste">Paste</button><button class="btn" id="ed_clear">Clear</button><button class="btn" id="ed_del">Delete bar</button>
+  </div>
+  <div id="edGrid"><div class="edRow"><canvas id="edLab"></canvas><canvas id="edG"></canvas></div></div>
+  <div class="bar eb">
+    <span id="edLenL" class="edF"></span><span id="edLens"></span>
+    <label class="btn edChk"><input type="checkbox" id="edRip" checked> Shift later notes</label>
+  </div>
+  <div class="bar eb">
+    <label class="btn edChk"><input type="checkbox" id="edStep"> Step input</label>
+    <span id="edStepB" class="edF"><button class="btn" id="edBack">◀ Back</button><button class="btn" id="edRest">Rest ▶</button></span>
+    <span id="edSelBox" class="edF"><b id="edSelI"></b><select id="edPad" class="btn" aria-label="Pad"></select><button class="btn" id="edL" aria-label="Move earlier">◀</button><button class="btn" id="edR" aria-label="Move later">▶</button><button class="btn" id="edX">Delete note</button></span>
+  </div>
+  <div id="edMsg" aria-live="polite">Tap the grid to add a note. Tap a note to select it, tap it again to remove it.</div>
+  <div id="edAsk"><div><p><b>Save your changes?</b></p><div class="btns"><button class="btn main" id="edAskSave">Save</button><button class="btn" id="edAskDrop">Discard</button><button class="btn" id="edAskKeep">Keep editing</button></div></div></div>
+</div>
 <script>
 const $=id=>document.getElementById(id);
 const L=[
@@ -199,7 +263,7 @@ function parseMidi(buf,opt){opt=opt||{};
   if(str(4)!=="MThd")throw new Error("not a MIDI file");
   p+=4;p+=2;const ntrk=d.getUint16(p);p+=2;const div=d.getUint16(p);p+=2;
   if(div&0x8000)throw new Error("SMPTE timing is not supported");
-  const raw=[],open={},tempos=[[0,500000]];let tsNum=4,tsDen=4,tsSet=false;
+  const raw=[],open={},tempos=[[0,500000]],tsEv=[];let tsNum=4,tsDen=4,tsSet=false;
   for(let t=0;t<ntrk;t++){
     if(str(4)!=="MTrk")throw new Error("bad track header");
     const len=d.getUint32(p);p+=4;const end=p+len;let tick=0,run=0;
@@ -210,6 +274,7 @@ function parseMidi(buf,opt){opt=opt||{};
       if(s===0xFF){
         const type=d.getUint8(p++),l=vl();
         if(type===0x51&&l===3)tempos.push([tick,(d.getUint8(p)<<16)|(d.getUint8(p+1)<<8)|d.getUint8(p+2)]);
+        if(type===0x58&&l>=2)tsEv.push([tick,d.getUint8(p)||4,1<<Math.min(6,d.getUint8(p+1))]);
         if(type===0x58&&!tsSet&&l>=2){tsNum=d.getUint8(p)||4;tsDen=1<<Math.min(6,d.getUint8(p+1));tsSet=true}
         p+=l;
       }else if(s===0xF0||s===0xF7){p+=vl()}
@@ -250,7 +315,22 @@ function parseMidi(buf,opt){opt=opt||{};
   else if(tsDen===2)unit=div*2;
   else if(tsDen===16)unit=div/4;
   for(let k=0;k<40000;k++){const t=toSec(k*unit);beats.push(t);if(t>lastN+2)break}
-  return {notes:clean,beats,tsNum:tsOut,bpm:Math.round(60e6/tempos[tempos.length>1?1:0][1]*div/unit),usedAll:!drums.length,tonal,pitches};
+  let barInfo=null;
+  tsEv.sort((a,b)=>a[0]-b[0]);
+  if(tsEv.some(x=>x[1]!==tsNum||x[2]!==tsDen)){
+    const lastTick=Math.max(0,...src.map(x=>x.tick)),bt=[],bars=[];let tk=0,ei=0,cn=tsNum,cd=tsDen;
+    while(tk<=lastTick+div&&bars.length<5000){
+      while(ei<tsEv.length&&tsEv[ei][0]<=tk+1){cn=tsEv[ei][1];cd=tsEv[ei][2];ei++}
+      const comp=cd>=8&&cn%3===0&&cn>3,bq=comp?12/cd:4/cd,nb=Math.max(1,Math.round(cn*4/cd/bq));
+      bars.push({b:bt.length,nb,n:cn,d:cd});
+      for(let i=0;i<nb;i++)bt.push(toSec(tk+Math.round(i*bq*div)));
+      tk+=Math.max(1,Math.round(cn*4/cd*div));
+    }
+    const lb=bars[bars.length-1],step=lb.nb>0?(toSec(tk)-bt[lb.b])/lb.nb:.5;
+    for(let i=0;i<6;i++)bt.push(toSec(tk)+i*step);
+    barInfo={beats:bt,bars,starts:bars.map(x=>bt[x.b]).concat([toSec(tk)])};
+  }
+  return {tsN:tsNum,tsD:tsDen,barInfo,notes:clean,beats:barInfo?barInfo.beats:beats,tsNum:barInfo?barInfo.bars[0].nb:tsOut,bpm:Math.round(60e6/tempos[tempos.length>1?1:0][1]*div/unit),usedAll:!drums.length,tonal,pitches};
 }
 
 /* ---------- sound ---------- */
@@ -358,6 +438,7 @@ function finish(){
   say(heard?"Listen-through done – not counted in your progress":`Done – ${jc?Math.round(score/jc*100):0}% accuracy, ${misses} missed, best run ${bestCombo}`);
 }
 function hit(l,ts,kit){
+  if(edOn){initAudio();if(!kit||soundAll)snd(l);edPad(l);return}
   initAudio();if(!kit||soundAll)snd(l);flash[l]=1;if(calib){calib.hit(ts);return}if(free)return;
   if(!playing||songTime<-0.15)return;
   let t=startSong+((ts-lat)-startWall)/1000*rate;
@@ -484,7 +565,7 @@ function drawStaff(){
   g.save();g.beginPath();g.rect(clefW,0,W-clefW,H);g.clip();
   beats.forEach((t,i)=>{
     const x=ph+(t-songTime)*sx;if(x<clefW||x>W)return;
-    const bar=i%tsNum===0;
+    const bar=isBarBeat(i);
     g.strokeStyle=bar?C.ink:C.line;g.lineWidth=bar?2:1;g.globalAlpha=bar?.9:.7;
     g.beginPath();g.moveTo(x,bar?Y(8):Y(9.5));g.lineTo(x,bar?Y(0):Y(-.5));g.stroke();
   });
@@ -605,7 +686,7 @@ function showResults(){
   if(nxtL)$("rNL").onclick=()=>{closePanel();openLesson(nxtL)};
   if(wq&&wi<wq.length-1)$("rNext").onclick=()=>{wi++;closePanel();openLesson(wq[wi],2);play()};
   if(c.hardBar)$("rLoop").onclick=()=>{
-    loopA=beats[(c.hardBar-1)*tsNum];loopB=beats[Math.min(c.hardBar*tsNum,beats.length-1)];loopOn=true;updLoop();
+    loopA=barStartT(c.hardBar-1);loopB=barStartT(c.hardBar);loopOn=true;updLoop();
     closePanel();reset();bump(Math.max(40,Math.round(rate*100)-15));seekTo(loopA-lead(),loopA);gapEnd=loopA;play();
   };
   $("title").textContent=songName+bestText();
@@ -727,7 +808,7 @@ function openLesson(les,mul=1){
   beats=[];for(let k=0;k<=nbars*ts+2;k++)beats.push(k*bd0);
   back=bk2;tsNum=ts;bd=bd0;baseBpm=les.bpm;assignStick(out);
   loopA=loopB=null;loopOn=false;updLoop();
-  chordMarks=[];free=false;songId="lesson:"+les.id;songName=les.n;
+  chordMarks=[];clearScoreState();srcTs={n:ts,d:4};free=false;songId="lesson:"+les.id;songName=les.n;
   $("title").textContent=(wq?"("+(wi+1)+"/"+wq.length+") ":"")+les.n+" · "+LV[les.lv]+bestText();
   $("empty").style.display="none";
   $("bkOn").checked=true;bump(100);reset();$("play").textContent="Play";
@@ -763,7 +844,7 @@ function coach(acc,avg){
   const tips=[];let hardBar=0;
   if(missT.length&&beats.length){
     const cnt={};
-    missT.forEach(t=>{let i=0;while(i+1<beats.length&&beats[i+1]<=t)i++;const b=Math.floor(i/tsNum)+1;cnt[b]=(cnt[b]||0)+1});
+    missT.forEach(t=>{let i=0;while(i+1<beats.length&&beats[i+1]<=t)i++;const b=barOfT(t)+1;cnt[b]=(cnt[b]||0)+1});
     const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];
     if(top&&top[1]>=2){hardBar=+top[0];tips.push(`Most of your misses are in bar ${hardBar}. Loop just that bar at a slower tempo until it feels easy.`)}
   }
@@ -854,6 +935,8 @@ function showHelp(){
   <p>If a pad does nothing, the message line shows its note number. Unplug and re-plug the cable, then try again.</p>
   <h3>Getting music in</h3>
   <ul><li><b>From chords:</b> paste chords from Ultimate Guitar, or type them like | Am | F | C | G |. Pick a style and Stickwork writes the drums.</li><li><b>MuseScore:</b> download the MIDI or MusicXML file, then Tools, Open file.</li><li><b>Songsterr:</b> open the Guitar Pro file (.gp, .gp5) you downloaded. Only the drum track is used.</li><li><b>PDF:</b> a PDF is a picture, so notes cannot be read from it. Use MIDI or MusicXML instead.</li><li><b>No drums in the file, or an mp3:</b> Stickwork guesses the chords bar by bar and opens them in From chords so you can correct them and build a drum part.</li></ul>
+  <h3>Writing your own notation</h3>
+  <ul><li>Tap <b>Write &amp; edit</b>. Create a new score, or edit the song that is loaded (lesson, chords, MIDI or a score file).</li><li>Tap the grid to add a note. Tap a note to select it, tap again to remove it. Tap a bar in the notation to jump to it.</li><li>Pick a length to change the selected note. With <b>Shift later notes</b> on, the rest of the bar moves along. With it off, the longer note writes over what follows.</li><li>Change the time signature, grid and tempo for each bar. Tick <b>and every bar after</b> to change the rest of the song too.</li><li><b>Step input</b> writes a note at the cursor for every pad you hit on the kit.</li><li><b>Practise this</b> loads the score from the bar you are on. <b>Save</b> keeps it under My scores.</li></ul>
   <h3>Headphones</h3>
   <p>Bluetooth headphones add a delay. Use the module's headphone jack for the drums, and raise Settings, Audio delay until the click lines up.</p>
   <h3>Keyboard keys</h3>
@@ -903,7 +986,7 @@ function histSvg(){
   return s;
 }
 function openFree(bpm,ts){
-  free=true;wq=null;back=[];
+  free=true;wq=null;back=[];clearScoreState();
   bd=60/bpm;tsNum=ts;baseBpm=bpm;
   beats=[];for(let k=0;k<=bpm*20+4;k++)beats.push(k*bd);
   notes=[{t:1195,l:12}];endT=1200;
@@ -931,7 +1014,7 @@ function showWorkout(){
 }
 function exportData(){
   const o={v:1};
-  ["sw_hist","sw_time","sw_goals","sw_lat","sw_aud","sw_win","sw_cnt","sw_staff","sw_stick","sw_tools","sw_seen","sw_charts","sw_chartlast"].forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)o[k]=v}catch(e){}});
+  ["sw_hist","sw_time","sw_goals","sw_lat","sw_aud","sw_win","sw_cnt","sw_staff","sw_stick","sw_tools","sw_seen","sw_charts","sw_chartlast","sw_scores"].forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)o[k]=v}catch(e){}});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([JSON.stringify(o)],{type:"application/json"}));
   a.download="stickwork-progress-"+dayKey(Date.now())+".json";
@@ -940,7 +1023,7 @@ function exportData(){
 async function importData(f){
   try{
     const o=JSON.parse(await f.text());
-    const ok=["sw_hist","sw_time","sw_goals","sw_lat","sw_aud","sw_win","sw_cnt","sw_staff","sw_stick","sw_tools","sw_seen","sw_charts","sw_chartlast"];
+    const ok=["sw_hist","sw_time","sw_goals","sw_lat","sw_aud","sw_win","sw_cnt","sw_staff","sw_stick","sw_tools","sw_seen","sw_charts","sw_chartlast","sw_scores"];
     if(!o||o.v!==1)throw new Error("not a backup");
     ok.forEach(k=>{if(typeof o[k]==="string")localStorage.setItem(k,o[k])});
     showStats();say("Progress restored. Reload the app to apply all settings.");
@@ -1051,6 +1134,7 @@ function assignStick(out){
   });
 }
 const NEWS=[
+{v:"1.10.0",items:["New Write & edit button: write your own drum notation bar by bar on a step grid, with real notation drawn above it (notes, stems, beams, rests and triplets).","Each bar has its own time signature (1 to 15 beats over 2, 4, 8 or 16), grid (8ths, 16ths, 32nds, triplets) and optional tempo change. Insert, duplicate, copy, paste, clear and delete bars.","Change any note's length: Shift later notes moves the rest of the bar along, like a notation program. Move notes earlier or later, or swap them to another pad.","Edit anything Stickwork turned into notation: lessons, chord charts, MIDI, MuseScore and Guitar Pro files. Load it, tap Write & edit, then Edit. Bar numbers, loops and the click follow your time signature changes.","Step input: hit pads on your kit and each hit is written at the cursor, then the cursor moves on.","Save scores on the device, practise them like any song, and save them as MIDI files."]},
 {v:"1.9.0",items:["Open file now takes songs with no drum part: a MIDI or score of a melody (such as a harmonica or piano line), and audio files (mp3, wav, m4a, mp4). Stickwork guesses a chord for each bar and opens it in From chords, where you can fix any chord before building the drums.","Imported drum parts are trimmed so they can be played with two hands and two feet (no more than two hand notes at once). Switch this off under Tools, Keep drum parts playable.","Chords guessed from audio are a rough guess. Check them against the song."]},
 {v:"1.8.0",items:["New From chords button: paste chords from Ultimate Guitar or type your own, pick a style and tempo, and Stickwork writes a drum part for them. Chord names show above the staff and a bass and chord backing plays along. Verses play lighter and choruses bigger, with fills and a crash and stop ending.","You can now open MuseScore (MusicXML) and Guitar Pro files (.gp, .gp3, .gp4, .gp5) from Tools, Open file. Only the drum part is used. PDFs are pictures, so they cannot be read.","6/8 and other eighth-note time signatures in MIDI files now count their beats properly.","Typing in a text box no longer plays drum sounds."]},
 {v:"1.7.1",items:["Runs where the app plays the drums for you (Play drums for me) are now listen-only. They are not saved to your progress, accuracy history or practice time, and the tempo trainer will not speed up from them. Only what you play yourself counts."]},
@@ -1102,7 +1186,7 @@ function frame(){
       const tb=beatT(nb);
       if(tb>songTime+(practice?.02:(.12+aud/1000)*rate))break;
       if(looping&&tb>=loopB)break;
-      if(tb>=songTime-.03&&(nb<0||met||tb<gapEnd))clk(ac.currentTime+Math.max(0,(tb-songTime)/rate-aud/1000),((nb%tsNum)+tsNum)%tsNum===0);
+      if(tb>=songTime-.03&&(nb<0||met||tb<gapEnd))clk(ac.currentTime+Math.max(0,(tb-songTime)/rate-aud/1000),isBarBeat(nb));
       if(met&&nb>=0&&sub>1&&!practice){
         const nt=beatT(nb+1),span=(isFinite(nt)?nt:tb+bd)-tb;
         for(let k=1;k<sub;k++){const t2=tb+k*span/sub;if(t2>=songTime-.03&&!(looping&&t2>=loopB))clk(ac.currentTime+Math.max(0,(t2-songTime)/rate-aud/1000),false,.45)}
@@ -1119,7 +1203,7 @@ function frame(){
   }
   if(!seeking&&endT)$("seek").value=Math.round(Math.max(0,songTime)/endT*1000);
   $("pos").textContent=fmt(songTime);
-  draw();drawStaff();
+  if(!edOn){draw();drawStaff()}
 }
 
 /* ---------- inputs ---------- */
@@ -1607,7 +1691,7 @@ function openChart(ch){
   if(!out.length){say("Those chords did not produce any drum notes.");return false}
   notes=out;endT=out[out.length-1].t+1.5;
   beats=[];for(let k=0;k<=bars.length*ts+2;k++)beats.push(k*bd0);
-  back=bk2;chordMarks=marks;tsNum=ts;bd=bd0;baseBpm=bpm;assignStick(out);
+  back=bk2;chordMarks=marks;tsNum=ts;bd=bd0;baseBpm=bpm;assignStick(out);clearScoreState();srcTs={n:+ch.ts.split("/")[0],d:+ch.ts.split("/")[1]};
   loopA=loopB=null;loopOn=false;updLoop();
   free=false;wq=null;songId="chart:"+ch.name;songName=ch.name;
   $("title").textContent=ch.name+" · "+st.n+bestText();
@@ -1676,9 +1760,10 @@ $("mid").onchange=async e=>{
     if(!r.notes.length)throw new Error("no drum notes found");
     let simp="";
     if($("simp").checked){const q=makePlayable(r.notes);if(q.removed){r.notes=q.notes;simp=` · ${q.removed} note${q.removed===1?"":"s"} left out so it can be played with two hands and two feet`}}
-    chordMarks=[];
+    chordMarks=[];clearScoreState();srcTs=r.tsN?{n:r.tsN,d:r.tsD}:null;
     notes=r.notes;endT=notes[notes.length-1].t+1.5;
     beats=r.beats;tsNum=r.tsNum;bd=beats.length>1?beats[1]-beats[0]:.5;
+    if(r.barInfo){barT=r.barInfo.starts;barSet=new Set(r.barInfo.bars.map(x=>x.b));srcBars=r.barInfo.bars}
     loopA=loopB=null;loopOn=false;updLoop();
     songId=f.name+"|"+notes.length;songName=f.name;saveSong(f.name,buf,songId);
     back=[];free=false;wq=null;baseBpm=r.bpm;$("tempo").dispatchEvent(new Event("input"));
@@ -1780,7 +1865,7 @@ $("cntSel").onchange=e=>{countBars=+e.target.value;try{localStorage.setItem("sw_
 $("lbGo").onclick=()=>{
   if(!beats.length){say("Load a song or lesson first.");return}
   const a=Math.max(1,Math.floor(+$("lbA").value||1)),b=Math.max(a,Math.floor(+$("lbB").value||a));
-  const A=beats[Math.min((a-1)*tsNum,beats.length-1)],B=beats[Math.min(b*tsNum,beats.length-1)];
+  const A=barStartT(a-1),B=barStartT(b);
   if(B<=A+.2){say("That bar range is outside the song.");return}
   loopA=A;loopB=B;loopOn=true;updLoop();
   seekTo(A-lead(),A);gapEnd=countBars?A:-Infinity;
@@ -1795,17 +1880,660 @@ $("prog").onclick=showProgress;
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&tPlay>2000){addTime(tPlay/1000);tPlay=0}});
 showStats();
 
+/* ---------- notation editor: write your own scores, edit imported ones (v1.10) ---------- */
+let edOn=false,ed=null,curScore=null,barT=null,barSet=null,srcTs=null,srcBars=null,scoreHint=null;
+const ROWS=[10,0,1,2,11,6,7,4,5,8,9,12,3];
+const RES=[[1,"Quarters"],[2,"8ths"],[4,"16ths"],[8,"32nds"],[3,"8th triplets"],[6,"16th triplets"]];
+const resName=r=>(RES.find(x=>x[0]===r)||[0,r+" per beat"])[1];
+const qlen=b=>b.n*4/b.d;
+const spbOf=b=>Math.round(qlen(b)*b.res);
+const okRes=(n,d,r)=>{const v=n*4/d*r;return Math.abs(v-Math.round(v))<1e-6&&Math.round(v)>=1&&Math.round(v)<=64};
+const compoundTs=b=>b.d>=8&&b.n%3===0&&b.n>3;
+const beatQ=b=>compoundTs(b)?12/b.d:4/b.d;
+const groupQ=b=>compoundTs(b)?12/b.d:(b.d>=8&&qlen(b)<=1.5?qlen(b):1);
+const vox=l=>(l===12||l===3)?1:0;
+const STD=[4,3,2,1.5,1,.75,.5,.375,.25,.125];
+const LENS=[[0,"Auto"],[4,"Whole"],[2,"1/2"],[1.5,"Dotted 1/4"],[1,"1/4"],[2/3,"1/4 triplet"],[.75,"Dotted 1/8"],[.5,"1/8"],[1/3,"1/8 triplet"],[.375,"Dotted 1/16"],[.25,"1/16"],[1/6,"1/16 triplet"],[.125,"1/32"]];
+const near=(a,b)=>Math.abs(a-b)<1e-6;
+function writtenQ(d,res){
+  const q=d/res;if(STD.some(v=>near(v,q)))return q;
+  const w=res%3===0?q*1.5:q;
+  return STD.find(v=>v<=w+1e-6)||.125;
+}
+const beamsOf=w=>w>=1?0:w>=.5?1:w>=.25?2:3;
+const dotted=w=>[3,1.5,.75,.375].some(v=>near(v,w));
+function nextBound(b,s){const g=groupQ(b)*b.res;return Math.max(s+1,Math.floor((Math.floor(s/g+1e-9)+1)*g+1e-9))}
+function edNorm(b){
+  const S=spbOf(b),seen=new Set();
+  b.notes=b.notes.filter(x=>x.s>=0&&x.s<S&&L[x.l]).filter(x=>{const k=x.s*16+x.l;if(seen.has(k))return false;seen.add(k);return true});
+  b.notes.sort((a,c)=>a.s-c.s||ROWS.indexOf(a.l)-ROWS.indexOf(c.l));
+  for(const v of [0,1]){
+    const ns=b.notes.filter(x=>vox(x.l)===v),steps=[...new Set(ns.map(x=>x.s))];
+    steps.forEach((s,i)=>{
+      const nx=i+1<steps.length?steps[i+1]:S,ch=ns.filter(x=>x.s===s);
+      let d=Math.max(...ch.map(x=>x.d||0));
+      if(!d)d=Math.min(nx,nextBound(b,s))-s;
+      d=Math.max(1,Math.min(d,nx-s));ch.forEach(x=>x.d=d);
+    });
+  }
+  return b;
+}
+const newBar=(n,d,res,bpm)=>({n,d,res,bpm:bpm||null,notes:[]});
+function scoreSig(sc){let bpm=sc.bars[0].bpm||100;return sc.bars.map(b=>{if(b.bpm)bpm=b.bpm;return b.n+"/"+b.d+"@"+bpm}).join(",")}
+
+/* turn whatever is loaded (lesson, chart, MIDI, score file) into a score */
+function bposOf(t){
+  if(!beats.length)return t/bd;
+  if(t<=beats[0])return (t-beats[0])/bd;
+  const last=beats.length-1;
+  if(t>=beats[last]){const d=last>0?beats[last]-beats[last-1]:bd;return last+(t-beats[last])/d}
+  let lo=0,hi=last;while(hi-lo>1){const m=(lo+hi)>>1;if(beats[m]<=t)lo=m;else hi=m}
+  return lo+(t-beats[lo])/(beats[hi]-beats[lo]);
+}
+function tAtBeat(i){
+  if(i<beats.length)return beats[i];
+  const last=beats.length-1,d=last>0?beats[last]-beats[last-1]:bd;return beats[last]+(i-last)*d;
+}
+function scoreFromSong(){
+  if(curScore)return JSON.parse(JSON.stringify(curScore));
+  const ts0=srcTs&&Math.abs(srcTs.n*4/srcTs.d/(tsNum||4)-beatQ(srcTs))<.01?srcTs:{n:tsNum||4,d:4},per=tsNum||4;
+  const lastBp=notes.length?bposOf(notes[notes.length-1].t):0;
+  const defs=[];
+  if(srcBars&&srcBars.length){for(const x of srcBars){if(defs.length&&x.b>lastBp+1e-6)break;defs.push(x)}}
+  else{const nb=Math.max(1,Math.floor(lastBp/per+1e-6)+1);for(let k=0;k<nb;k++)defs.push({b:k*per,nb:per,n:ts0.n,d:ts0.d})}
+  const pos=notes.map(n=>({l:n.l,bp:bposOf(n.t)}));
+  const bars=[];let carry=[],ni=0,prevBpm=0,ts=ts0;
+  defs.forEach((df,k)=>{
+    ts={n:df.n,d:df.d};const qb=ts.n*4/ts.d,end=df.b+df.nb,inBar=[];
+    while(ni<pos.length&&pos[ni].bp<end-1e-6){inBar.push(pos[ni]);ni++}
+    const fr=inBar.map(p=>Math.max(0,(p.bp-df.b)/df.nb));
+    const cands=[2,4,3,8,6,1].filter(r=>okRes(ts.n,ts.d,r));
+    let res=okRes(ts.n,ts.d,4)?4:cands[0];
+    if(fr.length){
+      let best=null;
+      for(const r of cands){
+        const S=qb*r;let mx=0,sum=0;
+        for(const f of fr){const e=Math.abs(f*S-Math.round(f*S))/r;mx=Math.max(mx,e);sum+=e}
+        if(mx<=.07){best=r;break}
+        if(!best||sum<best.sum)best={r,sum};
+      }
+      res=typeof best==="number"?best:best.r;
+    }
+    const b=newBar(ts.n,ts.d,res),S=spbOf(b),next=[];
+    for(const c of carry)b.notes.push({s:0,l:c,d:0});
+    inBar.forEach((p,i)=>{const s=Math.round(fr[i]*S);if(s>=S)next.push(p.l);else b.notes.push({s,l:p.l,d:0})});
+    carry=next;
+    const dur=tAtBeat(end)-tAtBeat(df.b),bpm=Math.round(qb*600/Math.max(.05,dur))/10;
+    if(k===0||Math.abs(bpm-prevBpm)>.6){b.bpm=bpm;prevBpm=bpm}
+    bars.push(edNorm(b));
+  });
+  if(carry.length){const b=newBar(ts.n,ts.d,bars[bars.length-1].res);carry.forEach(l=>b.notes.push({s:0,l,d:0}));bars.push(edNorm(b))}
+  const nm=String(songName||"My score").replace(/\.[a-z0-9]{2,5}$/i,"");
+  const sc={name:nm+(songId.startsWith("score:")?"":" (edited)"),bpm:bars[0].bpm,bars};
+  if(back.length||chordMarks.length){sc.back=back;sc.marks=chordMarks;sc.sig=scoreSig(sc)}
+  return sc;
+}
+
+/* build a playable song from a score */
+function scoreToSong(sc){
+  let t=0,bpm=sc.bars[0].bpm||sc.bpm||100;
+  const out=[],bt=[],bb=[],starts=[];
+  sc.bars.forEach(b=>{
+    if(b.bpm)bpm=b.bpm;
+    const q=60/bpm,st=q/b.res,bu=beatQ(b),nbt=Math.max(1,Math.round(qlen(b)/bu));
+    starts.push(t);bb.push(bt.length);
+    for(let i=0;i<nbt;i++)bt.push(t+i*bu*q);
+    for(const x of b.notes)out.push({t:t+x.s*st,l:x.l});
+    t+=qlen(b)*q;
+  });
+  starts.push(t);
+  const lastD=bt.length>1?bt[bt.length-1]-bt[bt.length-2]:.5;
+  for(let i=0;i<8;i++)bt.push(t+i*lastD);
+  out.sort((a,b)=>a.t-b.t);
+  return {notes:out,beats:bt,barBeats:bb,barStarts:starts};
+}
+function loadScore(sc,atBar){
+  const r=scoreToSong(sc);
+  if(!r.notes.length){say("That score has no notes yet.");return false}
+  curScore=JSON.parse(JSON.stringify(sc));
+  notes=r.notes;endT=Math.max(notes[notes.length-1].t+1.5,0);
+  beats=r.beats;barT=r.barStarts;barSet=new Set(r.barBeats);
+  tsNum=r.barBeats.length>1?r.barBeats[1]-r.barBeats[0]:Math.max(1,Math.round(qlen(sc.bars[0])/beatQ(sc.bars[0])));
+  bd=beats.length>1?beats[1]-beats[0]:.5;baseBpm=sc.bars[0].bpm||sc.bpm||100;srcTs={n:sc.bars[0].n,d:sc.bars[0].d};
+  const keep=sc.back&&sc.sig&&sc.sig===scoreSig(sc);
+  back=keep?sc.back:[];chordMarks=keep?(sc.marks||[]):[];
+  assignStick(notes);
+  loopA=loopB=null;loopOn=false;updLoop();
+  free=false;wq=null;songId="score:"+sc.name;songName=sc.name;
+  $("title").textContent=sc.name+bestText();$("empty").style.display="none";
+  $("bkOn").checked=keep;bump(100);reset();$("play").textContent="Play";
+  if(atBar>0&&atBar<barT.length-1){const A=barT[atBar];seekTo(A-lead(),A)}
+  scoreHint={t:songTime,k:Math.max(0,Math.min(atBar||0,sc.bars.length-1))};
+  say(`${sc.name} · ${sc.bars.length} bars · ${notes.length} notes · ${Math.round(baseBpm)} BPM`+(sc.back&&!keep?" · backing music left out because the tempo or time signatures changed":"")+(atBar>0?" · starts at bar "+(atBar+1):""));
+  return true;
+}
+function isBarBeat(i){
+  if(i<0||!barSet)return ((i%tsNum)+tsNum)%tsNum===0;
+  return barSet.has(i);
+}
+function barStartT(k){
+  if(barT)return barT[Math.max(0,Math.min(k,barT.length-1))];
+  return beats[Math.max(0,Math.min(k*tsNum,beats.length-1))];
+}
+function barOfT(t){
+  if(barT){let i=0;while(i+2<barT.length&&barT[i+1]<=t+1e-6)i++;return i}
+  let i=0;while(i+1<beats.length&&beats[i+1]<=t)i++;return Math.floor(i/tsNum);
+}
+function clearScoreState(){curScore=null;barT=null;barSet=null;srcBars=null}
+
+/* saved scores */
+const allScores=()=>jget("sw_scores",{});
+function storeScore(sc){const a=allScores();a[sc.name]=sc;jset("sw_scores",a)}
+
+/* MIDI export */
+function scoreToMidiFile(sc){
+  const PPQ=480,ev=[];let tick=0,bpm=0,ts="";
+  const GM=[49,42,46,44,38,37,48,45,43,41,57,51,36];
+  sc.bars.forEach((b,k)=>{
+    const nb=b.bpm||(k===0?sc.bpm||100:bpm);
+    if(nb!==bpm){bpm=nb;const m=Math.round(6e7/bpm);ev.push({t:tick,o:0,b:[0xFF,0x51,3,(m>>16)&255,(m>>8)&255,m&255]})}
+    const tsk=b.n+"/"+b.d;
+    if(tsk!==ts){ts=tsk;ev.push({t:tick,o:0,b:[0xFF,0x58,4,b.n,Math.round(Math.log2(b.d)),24,8]})}
+    const tps=PPQ/b.res;
+    for(const x of b.notes){
+      const t0=tick+Math.round(x.s*tps);
+      ev.push({t:t0,o:2,b:[0x99,GM[x.l],100]});
+      ev.push({t:t0+Math.max(30,Math.min(Math.round(x.d*tps),PPQ)-10),o:1,b:[0x89,GM[x.l],0]});
+    }
+    tick+=Math.round(qlen(b)*PPQ);
+  });
+  ev.sort((a,b)=>a.t-b.t||a.o-b.o);
+  const trk=[];let last=0;
+  const vlq=v=>{const s=[v&127];while(v>>=7)s.unshift((v&127)|128);return s};
+  const name=[...new TextEncoder().encode(sc.name)].slice(0,100);
+  trk.push(0,0xFF,0x03,...vlq(name.length),...name);
+  for(const e of ev){trk.push(...vlq(e.t-last),...e.b);last=e.t}
+  trk.push(...vlq(Math.max(0,tick-last)),0xFF,0x2F,0);
+  const head=[0x4D,0x54,0x68,0x64,0,0,0,6,0,0,0,1,PPQ>>8,PPQ&255],len=trk.length;
+  return new Uint8Array([...head,0x4D,0x54,0x72,0x6B,(len>>>24)&255,(len>>16)&255,(len>>8)&255,len&255,...trk]);
+}
+function downloadMidi(sc){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([scoreToMidiFile(sc)],{type:"audio/midi"}));
+  a.download=(sc.name.replace(/[\\/:*?"<>|]+/g,"").trim()||"score")+".mid";
+  document.body.appendChild(a);a.click();a.remove();
+}
+
+/* home panel */
+const TS_OPT=["4/4","3/4","2/4","5/4","6/4","7/4","2/2","3/8","5/8","6/8","7/8","9/8","12/8"];
+function showWrite(){
+  const loaded=notes.length&&!free,atBar=!loaded?1:(scoreHint&&Math.abs(songTime-scoreHint.t)<1e-6)?scoreHint.k+1:(loopOn&&loopA!=null)?barOfT(loopA+1e-4)+1:barOfT(Math.max(0,songTime))+1,all=allScores(),names=Object.keys(all).sort((a,b)=>(all[b].at||0)-(all[a].at||0));
+  const rows=names.map((n,i)=>`<div class="srow"><button class="btn" data-we="${i}">${esc(n)}</button><span>${all[n].bars.length} bars</span><button class="btn" data-wp="${i}">Play</button><button class="btn" data-wm="${i}" title="Save as a MIDI file">MIDI</button><button class="btn" data-wd="${i}">Delete</button></div>`).join("");
+  panel(`<h2>Write and edit notation</h2>
+  <p>Write your own grooves bar by bar, or fix the notes, lengths and time signatures of anything Stickwork turned into notation.</p>
+  ${loaded?`<div class="btns"><button class="btn main" id="wCur">Edit “${esc(songName)}”</button></div><p class="cnote">Opens at bar ${atBar}. Imported notes are snapped to the nearest 8th, 16th, 32nd or triplet in each bar. The original file is not changed.</p>`:""}
+  <h3>New score</h3>
+  <div class="fgrid"><label>Name<input id="wN" value="My groove"></label><label>Time signature<select id="wT">${TS_OPT.map(t=>`<option${t==="4/4"?" selected":""}>${t}</option>`).join("")}</select></label>
+  <label>Tempo (BPM)<input id="wB" type="number" min="30" max="300" value="${Math.round(baseBpm)||100}"></label><label>Bars<input id="wK" type="number" min="1" max="400" value="4"></label>
+  <label>Grid<select id="wG">${RES.map(r=>`<option value="${r[0]}"${r[0]===4?" selected":""}>${r[1]}</option>`).join("")}</select></label></div>
+  <div class="btns"><button class="btn${loaded?"":" main"}" id="wNew">Create</button></div>
+  <h3>My scores</h3>${rows||"<p class=\"cnote\">Nothing saved yet. Scores you save in the editor appear here.</p>"}
+  <div class="btns"><button class="btn" id="rClose">Close</button></div>`);
+  $("rClose").onclick=closePanel;
+  if(loaded)$("wCur").onclick=()=>{closePanel();openEditor(scoreFromSong(),atBar-1,false,!!(curScore&&allScores()[curScore.name]))};
+  $("wNew").onclick=()=>{
+    const [n,d]=$("wT").value.split("/").map(Number);let r=+$("wG").value;if(!okRes(n,d,r))r=[4,2,8,6,3,1].find(x=>okRes(n,d,x));
+    const bpm=Math.min(300,Math.max(30,+$("wB").value||100)),k=Math.min(400,Math.max(1,Math.round(+$("wK").value||4)));
+    const sc={name:($("wN").value.trim()||"My groove"),bpm,bars:Array.from({length:k},(_,i)=>newBar(n,d,r,i?null:bpm))};
+    closePanel();openEditor(sc,0,true);
+  };
+  document.querySelectorAll("#resCard [data-we]").forEach(b=>b.onclick=()=>{closePanel();openEditor(JSON.parse(JSON.stringify(all[names[+b.dataset.we]])),0,false,true)});
+  document.querySelectorAll("#resCard [data-wp]").forEach(b=>b.onclick=()=>{closePanel();loadScore(all[names[+b.dataset.wp]],0)});
+  document.querySelectorAll("#resCard [data-wm]").forEach(b=>b.onclick=()=>downloadMidi(all[names[+b.dataset.wm]]));
+  document.querySelectorAll("#resCard [data-wd]").forEach(b=>b.onclick=()=>{const a=allScores();delete a[names[+b.dataset.wd]];jset("sw_scores",a);showWrite()});
+}
+
+/* the editor itself */
+function openEditor(sc,k,isNew,saved){
+  if(playing)pause();if(perf)setPerf(false);
+  sc.bars.forEach(edNorm);
+  ed={sc,k:Math.max(0,Math.min(k||0,sc.bars.length-1)),sel:null,cur:{k:0,s:0},entry:0,ripple:true,step:false,undo:[],redo:[],dirty:!!isNew,savedName:saved?sc.name:null,clip:null,prev:null,advT:0,rows:[],scrollTo:true};
+  ed.cur.k=ed.k;
+  edOn=true;$("ed").classList.add("open");$("edName").value=sc.name;
+  $("edRip").checked=true;$("edStep").checked=false;$("edTsAll").checked=false;
+  edMsg(isNew?"Tap the grid to add a note. Tap a note to select it, tap it again to remove it.":"Bar "+(ed.k+1)+". Tap a bar in the notation to jump to it, or tap the grid to add and select notes.");
+  edRefresh();
+}
+function edClose(force){
+  if(!force&&ed.dirty){$("edAsk").style.display="flex";return}
+  edStop();$("edAsk").style.display="none";
+  edOn=false;$("ed").classList.remove("open");ed=null;
+}
+const edBar=()=>ed.sc.bars[ed.k];
+function edSnap(){ed.undo.push(JSON.stringify(ed.sc.bars));if(ed.undo.length>80)ed.undo.shift();ed.redo=[];ed.dirty=true}
+function edUndo(redo){
+  const from=redo?ed.redo:ed.undo,to=redo?ed.undo:ed.redo;if(!from.length)return;
+  to.push(JSON.stringify(ed.sc.bars));ed.sc.bars=JSON.parse(from.pop());
+  ed.k=Math.min(ed.k,ed.sc.bars.length-1);ed.cur.k=Math.min(ed.cur.k,ed.sc.bars.length-1);ed.sel=null;ed.dirty=true;edRefresh();
+}
+function edMsg(t){$("edMsg").textContent=t}
+const selNote=()=>{if(!ed.sel)return null;const b=ed.sc.bars[ed.sel.k];return b?b.notes.find(x=>x.s===ed.sel.s&&x.l===ed.sel.l)||null:null};
+function countName(b,s){
+  const bs=beatQ(b)*b.res,bi=Math.floor(s/bs+1e-9),i=Math.round(s-bi*bs),per=Math.round(bs);
+  let sub="";
+  if(per===2)sub=["","&"][i];else if(per===4)sub=["","e","&","a"][i];else if(per===3)sub=["","&","a"][i];
+  else if(per===6)sub=i%2?"":["","&","a"][i/2];else if(per===8)sub=i%2?"":["","e","&","a"][i/2];
+  return {b:bi+1,sub:sub||""};
+}
+
+function edRefresh(){
+  const b=edBar(),sc=ed.sc;
+  $("edUndo").disabled=!ed.undo.length;$("edRedo").disabled=!ed.redo.length;
+  $("edBarN").textContent="Bar "+(ed.k+1)+" of "+sc.bars.length;
+  $("edTn").value=b.n;$("edTd").value=b.d;
+  $("edRes").innerHTML=RES.filter(r=>okRes(b.n,b.d,r[0])).map(r=>`<option value="${r[0]}"${r[0]===b.res?" selected":""}>${r[1]}</option>`).join("");
+  let inh=sc.bars[0].bpm||sc.bpm||100;for(let i=1;i<ed.k;i++)if(sc.bars[i].bpm)inh=sc.bars[i].bpm;
+  $("edBpm").value=b.bpm||"";$("edBpm").placeholder=ed.k?String(inh):"100";
+  const x=selNote(),S=spbOf(b);
+  const curLen=x?x.d/b.res:ed.entry;
+  $("edLens").innerHTML=LENS.filter(([q])=>q===0?!x:okLen(q,b)).map(([q,n])=>`<button class="btn${(x?near(q,curLen):near(q,ed.entry))?" main":""}" data-q="${q}">${n}</button>`).join("")+(x&&!LENS.some(([q])=>q&&near(q,curLen))?`<button class="btn main" disabled>${x.d} steps</button>`:"");
+  document.querySelectorAll("#edLens [data-q]").forEach(c=>c.onclick=()=>edLen(+c.dataset.q));
+  if(x){
+    const cn=countName(b,x.s);
+    $("edSelI").textContent=L[x.l].n+" · bar "+(ed.sel.k+1)+" · beat "+cn.b+(cn.sub?" "+cn.sub:"");
+    $("edPad").value=x.l;$("edSelBox").style.display="flex";
+  }else{
+    $("edSelBox").style.display="none";
+  }
+  $("edLenL").textContent=x?"Length of the selected note":"Length for new notes";
+  $("ed_paste").disabled=!ed.clip;$("ed_del").disabled=sc.bars.length<2;
+  $("edStepB").style.display=ed.step?"flex":"none";
+  edLayout();edDrawScore();edDrawGrid();
+}
+function okLen(q,b){const v=q*b.res;return Math.abs(v-Math.round(v))<1e-6&&Math.round(v)>=1&&Math.round(v)<=spbOf(b)}
+
+/* ---- score (sheet) view ---- */
+const ESP=7;
+function edLayout(){
+  const box=$("edScore"),W=box.clientWidth||600,qw=Math.max(30,Math.min(66,W/15)),sc=ed.sc;
+  const rows=[];let row=[],w=0;
+  sc.bars.forEach((b,k)=>{
+    const show=k===0||b.n!==sc.bars[k-1].n||b.d!==sc.bars[k-1].d;
+    const bw=Math.max(120,qlen(b)*qw*(b.res>=8?1.35:1))+(show?20:0)+(k===0?26:0);
+    if(row.length&&w+bw>W-16){rows.push({bars:row,w});row=[];w=0}
+    row.push({k,bw,show});w+=bw;
+  });
+  if(row.length)rows.push({bars:row,w,last:true});
+  rows.forEach(r=>{let x=8;const f=r.last&&r.w<(W-16)*.7?1:(W-16)/r.w;r.bars.forEach(c=>{c.x=x;c.w=c.bw*f;x+=c.w})});
+  ed.rows=rows;ed.rowH=ESP*11.5+30;
+  const total=rows.length*ed.rowH+8,cvH=Math.min(total,box.clientHeight||200);
+  $("edSpacer").style.height=Math.max(0,total-cvH)+"px";
+  const cs=$("edSc"),dpr=devicePixelRatio||1;
+  cs.style.height=cvH+"px";cs.width=W*dpr;cs.height=cvH*dpr;cs.getContext("2d").setTransform(dpr,0,0,dpr,0,0);
+  if(ed.scrollTo){
+    ed.scrollTo=false;
+    const ri=rows.findIndex(r=>r.bars.some(c=>c.k===ed.k)),top=ri*ed.rowH,st=box.scrollTop,h=box.clientHeight;
+    if(top<st||top+ed.rowH>st+h)box.scrollTop=Math.max(0,top-8);
+  }
+}
+function edDrawScore(){
+  const box=$("edScore"),cs=$("edSc"),g=cs.getContext("2d"),W=box.clientWidth,H=parseFloat(cs.style.height)||0,top=box.scrollTop,rh=ed.rowH,sc=ed.sc;
+  g.clearRect(0,0,W,H);
+  const r0=Math.max(0,Math.floor(top/rh)),r1=Math.min(ed.rows.length-1,Math.floor((top+H)/rh));
+  for(let ri=r0;ri<=r1;ri++){
+    const oy=ri*rh-top+4,yB=oy+ESP*7+18,Y=s=>yB-s*ESP/2,row=ed.rows[ri],xe=row.bars[row.bars.length-1].x+row.bars[row.bars.length-1].w;
+    for(const c of row.bars)if(c.k===ed.k){g.fillStyle=C.band==="#00000008"?"#3d7bff1f":"#3d7bff33";g.fillRect(c.x,oy+2,c.w,rh-6)}
+    g.strokeStyle=C.mute;g.lineWidth=1;g.globalAlpha=.75;
+    for(let s=0;s<=8;s+=2){g.beginPath();g.moveTo(row.bars[0].x,Y(s));g.lineTo(xe,Y(s));g.stroke()}
+    g.globalAlpha=1;
+    for(const c of row.bars){
+      const b=sc.bars[c.k];
+      g.strokeStyle=C.ink;g.lineWidth=1.4;g.beginPath();g.moveTo(c.x+c.w,Y(8));g.lineTo(c.x+c.w,Y(0));g.stroke();
+      if(c===row.bars[0]){g.beginPath();g.moveTo(c.x,Y(8));g.lineTo(c.x,Y(0));g.stroke()}
+      g.fillStyle=C.mute;g.font="600 11px system-ui,sans-serif";g.textAlign="left";g.fillText(String(c.k+1),c.x+3,oy+11);
+      if(b.bpm){g.fillStyle=C.ink;g.fillText("♩ = "+Math.round(b.bpm),c.x+(String(c.k+1).length*7+10),oy+11)}
+      let x0=c.x+8;
+      if(c.k===0){g.fillStyle=C.ink;g.fillRect(x0+2,Y(6),3,Y(2)-Y(6));g.fillRect(x0+8,Y(6),3,Y(2)-Y(6));x0+=24}
+      if(c.show){g.fillStyle=C.ink;g.font="800 "+Math.round(ESP*2.1)+"px system-ui,sans-serif";g.textAlign="center";g.fillText(String(b.n),x0+7,Y(4)-2);g.fillText(String(b.d),x0+7,Y(0)-2);x0+=20}
+      edDrawBar(g,b,x0+6,c.x+c.w-10,Y,c.k);
+    }
+  }
+}
+function edDrawBar(g,b,xa,xb,Y,k){
+  const S=spbOf(b),X=s=>xa+(s/S)*(xb-xa),gq=groupQ(b)*b.res;
+  if(ed.step&&ed.cur.k===k){const x=X(ed.cur.s);g.fillStyle="#3d7bff55";g.fillRect(x-4,Y(11),8,Y(-3)-Y(11))}
+  if(ed.prev&&ed.prev.k===k&&ed.prev.s!=null){const x=X(ed.prev.s);g.strokeStyle="#3d7bff";g.lineWidth=2;g.beginPath();g.moveTo(x,Y(12));g.lineTo(x,Y(-4));g.stroke()}
+  const tupl=b.res%3===0;
+  for(const v of [0,1]){
+    const ns=b.notes.filter(x=>vox(x.l)===v),steps=[...new Set(ns.map(x=>x.s))];
+    const ch=steps.map(s=>{const c=ns.filter(x=>x.s===s),sp=c.map(x=>SP[x.l]),w=writtenQ(c[0].d,b.res);return {s,d:c[0].d,c,top:Math.max(...sp),bot:Math.min(...sp),w,bm:beamsOf(w),dot:dotted(w)}});
+    if(!ch.length){if(v===0)edRest(g,(xa+xb)/2,Y,4,v,b.notes.length===0);continue}
+    ch.forEach(e=>{e.end=v===0?Math.max(e.top+6.5,11):Math.min(e.bot-6.5,-4.5)});
+    const grps=[];let cur=[];
+    ch.forEach((e,i)=>{
+      const pv=ch[i-1],same=pv&&Math.floor(pv.s/gq+1e-9)===Math.floor(e.s/gq+1e-9)&&pv.s+pv.d===e.s&&pv.bm>0&&e.bm>0;
+      if(same)cur.push(e);else{if(cur.length)grps.push(cur);cur=[e]}
+    });
+    if(cur.length)grps.push(cur);
+    const dir=v===0?1:-1,sx=e=>X(e.s)+(v===0?ESP*.62:-ESP*.62);
+    g.strokeStyle=C.ink;g.fillStyle=C.ink;
+    for(const gr of grps){
+      if(gr.length>1){
+        const lvl=v===0?Math.max(...gr.map(e=>e.end)):Math.min(...gr.map(e=>e.end));gr.forEach(e=>e.end=lvl);
+        g.lineWidth=1.4;for(const e of gr){g.beginPath();g.moveTo(sx(e),Y(v===0?e.bot:e.top));g.lineTo(sx(e),Y(e.end));g.stroke()}
+        const yb=Y(lvl);
+        for(let lv=0;lv<3;lv++){
+          const ys=yb+dir*(lv*5+1.5);g.lineWidth=3;
+          gr.forEach((e,i)=>{
+            if(e.bm<=lv)return;const nx=gr[i+1],pv=gr[i-1];
+            if(nx&&nx.bm>lv){g.beginPath();g.moveTo(sx(e)-.7,ys);g.lineTo(sx(nx)+.7,ys);g.stroke()}
+            else if(!(pv&&pv.bm>lv)){const t=nx?1:-1;g.beginPath();g.moveTo(sx(e),ys);g.lineTo(sx(e)+t*ESP*.9,ys);g.stroke()}
+          });
+        }
+        if(tupl&&v===0&&gr.some(e=>!STD.some(q=>near(q,e.d/b.res)))){g.font="700 10px system-ui,sans-serif";g.textAlign="center";g.fillText(b.res===6&&!compoundTs(b)?"6":"3",(sx(gr[0])+sx(gr[gr.length-1]))/2,yb-9)}
+      }else{
+        const e=gr[0];if(e.w>=4)continue;
+        g.lineWidth=1.4;g.beginPath();g.moveTo(sx(e),Y(v===0?e.bot:e.top));g.lineTo(sx(e),Y(e.end));g.stroke();
+        const yb=Y(e.end);
+        for(let q=0;q<e.bm;q++){const o=dir*q*5;g.beginPath();g.moveTo(sx(e),yb+o);g.quadraticCurveTo(sx(e)+ESP*.9,yb+o+dir*ESP*.5,sx(e)+ESP*.7,yb+o+dir*ESP*1.4);g.stroke()}
+        if(tupl&&v===0&&!STD.some(q=>near(q,e.d/b.res))){g.font="700 10px system-ui,sans-serif";g.textAlign="center";g.fillText("3",sx(e),yb-9)}
+      }
+    }
+    for(const e of ch)for(const x of e.c){
+      const nx=X(x.s),y=Y(SP[x.l]),sel=ed.sel&&ed.sel.k===k&&ed.sel.s===x.s&&ed.sel.l===x.l;
+      g.strokeStyle=C.ink;g.lineWidth=1.3;for(let s=10;s<=SP[x.l];s+=2){g.beginPath();g.moveTo(nx-ESP,Y(s));g.lineTo(nx+ESP,Y(s));g.stroke()}
+      if(sel){g.fillStyle="#3d7bff55";g.beginPath();g.arc(nx,y,ESP*1.25,0,6.2832);g.fill()}
+      if(XH[x.l]){
+        const r=ESP*.5;g.beginPath();g.moveTo(nx-r,y-r);g.lineTo(nx+r,y+r);g.moveTo(nx+r,y-r);g.lineTo(nx-r,y+r);g.strokeStyle=C.ink;g.lineWidth=2;g.stroke();
+        if(x.l===OPENH){g.beginPath();g.arc(nx,y-ESP*1.1,ESP*.32,0,6.2832);g.lineWidth=1.3;g.stroke()}
+      }else{
+        g.beginPath();g.ellipse(nx,y,ESP*.66,ESP*.48,-.35,0,6.2832);
+        if(e.w>=2){g.strokeStyle=C.ink;g.lineWidth=1.6;g.stroke()}else{g.fillStyle=C.ink;g.fill()}
+      }
+      if(e.dot){g.fillStyle=C.ink;g.beginPath();g.arc(nx+ESP*1.2,y-(SP[x.l]%2===0?ESP*.5:0),1.7,0,6.2832);g.fill()}
+    }
+    let pos=0;
+    const fill=(a,z)=>{
+      while(a<z){
+        const bnd=Math.min(z,nextBound(b,a));let q=(bnd-a)/b.res,trip=false;
+        if(tupl&&!STD.some(t=>near(t,q))&&Math.abs(q*2-Math.round(q*2))>1e-6){q*=1.5;trip=true}
+        let s=a;
+        for(const v2 of [1,.5,.25,.125])while(q>=v2-1e-6){
+          const st=(trip?v2/1.5:v2)*b.res;
+          edRest(g,X(s)+(st/S)*(xb-xa)*.3,Y,v2,v,false);s+=st;q-=v2;
+        }
+        a=bnd;
+      }
+    };
+    for(const e of ch){if(e.s>pos)fill(pos,e.s);pos=e.s+e.d}
+    if(pos<S)fill(pos,S);
+  }
+}
+function edRest(g,x,Y,w,v,full){
+  g.fillStyle=C.ink;g.strokeStyle=C.ink;
+  const c=v===0?(full?5:6):-1;
+  if(w>=4||full){g.fillRect(x-5,Y(6),10,(Y(5)-Y(6))*.9);return}
+  if(w>=2){g.fillRect(x-5,Y(4)-(Y(3)-Y(4))*.9,10,(Y(3)-Y(4))*.9);return}
+  if(w>=1){const y=Y(c+2);g.lineWidth=2;g.beginPath();g.moveTo(x-2,y);g.lineTo(x+3,y+5);g.lineTo(x-2,y+10);g.lineTo(x+3,y+15);g.quadraticCurveTo(x-5,y+13,x+1,y+20);g.stroke();return}
+  const n=w>=.5?1:w>=.25?2:3,y=Y(c+1);
+  g.lineWidth=1.6;g.beginPath();g.moveTo(x+3,y);g.lineTo(x-1,y+8+n*3);g.stroke();
+  for(let i=0;i<n;i++){g.beginPath();g.arc(x-1+i*-1.2,y+2+i*5,2,0,6.2832);g.fill();g.beginPath();g.moveTo(x-1+i*-1.2,y+3+i*5);g.lineTo(x+3-i*1.2,y+i*5);g.stroke()}
+}
+
+/* ---- step grid ---- */
+function edDrawGrid(){
+  const b=edBar(),S=spbOf(b),box=$("edGrid"),cg=$("edG"),cl=$("edLab"),dpr=devicePixelRatio||1;
+  const LW=74,HD=24,availW=box.clientWidth-LW-2,availH=box.clientHeight-2;
+  const cw=Math.max(26,Math.min(88,Math.floor(availW/S))),rh=Math.max(24,Math.min(40,Math.floor((availH-HD)/ROWS.length)));
+  ed.cw=cw;ed.rh=rh;ed.hd=HD;
+  const W=S*cw,H=HD+ROWS.length*rh;
+  cg.style.width=W+"px";cg.style.height=H+"px";cg.width=W*dpr;cg.height=H*dpr;
+  cl.style.width=LW+"px";cl.style.height=H+"px";cl.width=LW*dpr;cl.height=H*dpr;
+  const g=cg.getContext("2d"),gl=cl.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);gl.setTransform(dpr,0,0,dpr,0,0);
+  g.clearRect(0,0,W,H);gl.clearRect(0,0,LW,H);
+  const bs=beatQ(b)*b.res,gq=groupQ(b)*b.res;
+  for(let s=0;s<S;s++){
+    const bi=Math.floor(s/bs+1e-9);
+    if(bi%2===1){g.fillStyle=C.band==="#00000008"?"#00000009":"#ffffff09";g.fillRect(s*cw,0,cw,H)}
+  }
+  ROWS.forEach((l,r)=>{if(r%2===0){g.fillStyle=C.band==="#00000008"?"#00000007":"#ffffff06";g.fillRect(0,HD+r*rh,W,rh)}});
+  for(let s=0;s<=S;s++){
+    const onBeat=Math.abs(s/bs-Math.round(s/bs))<1e-6,onGrp=Math.abs(s/gq-Math.round(s/gq))<1e-6;
+    g.strokeStyle=onBeat||s===S?C.ink:C.line;g.globalAlpha=s===0||s===S?.9:onBeat?.55:onGrp?.4:.6;g.lineWidth=onBeat||s===S?1.6:1;
+    g.beginPath();g.moveTo(s*cw+.5,HD-6);g.lineTo(s*cw+.5,H);g.stroke();
+  }
+  g.globalAlpha=1;
+  g.font="700 12px system-ui,sans-serif";g.textAlign="center";
+  for(let s=0;s<S;s++){const cn=countName(b,s);g.fillStyle=cn.sub?C.mute:C.ink;g.fillText(cn.sub?cn.sub:String(cn.b),s*cw+cw/2,16)}
+  if(ed.cur.k===ed.k){const x=ed.cur.s*cw;g.fillStyle=ed.step?"#3d7bff40":"#3d7bff1c";g.fillRect(x,0,cw,H);g.fillStyle="#3d7bff";g.fillRect(x,0,cw,3)}
+  for(const x of b.notes){
+    const r=ROWS.indexOf(x.l),y=HD+r*rh,sel=ed.sel&&ed.sel.k===ed.k&&ed.sel.s===x.s&&ed.sel.l===x.l;
+    g.globalAlpha=.38;g.fillStyle=L[x.l].c;edRR(g,x.s*cw+2,y+4,x.d*cw-4,rh-8,6);g.fill();
+    g.globalAlpha=1;edRR(g,x.s*cw+2,y+3,cw-4,rh-6,6);g.fill();
+    g.strokeStyle=sel?"#3d7bff":C.ink;g.lineWidth=sel?3:1;g.stroke();
+  }
+  if(ed.prev&&ed.prev.k===ed.k&&ed.prev.s!=null){g.strokeStyle="#3d7bff";g.lineWidth=3;g.beginPath();g.moveTo(ed.prev.s*cw,0);g.lineTo(ed.prev.s*cw,H);g.stroke()}
+  gl.fillStyle=getComputedStyle(document.documentElement).getPropertyValue("--panel").trim()||"#fff";gl.fillRect(0,0,LW,H);
+  gl.font="700 12px system-ui,sans-serif";gl.textAlign="left";
+  ROWS.forEach((l,r)=>{const y=HD+r*rh;gl.fillStyle=L[l].c;gl.fillRect(4,y+5,6,rh-10);gl.fillStyle=C.ink;gl.fillText(L[l].n,14,y+rh/2+4)});
+}
+function edRR(g,x,y,w,h,r){r=Math.min(r,w/2,h/2);g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+
+/* ---- editing actions ---- */
+function edEntrySteps(b){if(!ed.entry)return 0;const v=ed.entry*b.res;return Math.abs(v-Math.round(v))<1e-6&&v>=1?Math.round(v):0}
+function edAdd(k,s,l){
+  const b=ed.sc.bars[k];edSnap();
+  const same=b.notes.find(x=>x.s===s&&vox(x.l)===vox(l));
+  b.notes.push({s,l,d:same?same.d:edEntrySteps(b)});edNorm(b);
+  ed.sel={k,s,l};
+}
+function edGridClick(ev){
+  const r=$("edG").getBoundingClientRect(),x=ev.clientX-r.left,y=ev.clientY-r.top,b=edBar(),S=spbOf(b);
+  const s=Math.max(0,Math.min(S-1,Math.floor(x/ed.cw)));
+  ed.cur={k:ed.k,s};
+  if(y<ed.hd){edRefresh();return}
+  const row=Math.floor((y-ed.hd)/ed.rh),l=ROWS[row];if(l===undefined)return;
+  const at=b.notes.find(n=>n.s===s&&n.l===l);
+  if(at){
+    if(ed.sel&&ed.sel.k===ed.k&&ed.sel.s===s&&ed.sel.l===l){edSnap();b.notes=b.notes.filter(n=>n!==at);ed.sel=null;edMsg("Note removed");}
+    else{ed.sel={k:ed.k,s,l};edMsg("Selected. Tap it again to remove it.")}
+  }else{edAdd(ed.k,s,l);initAudio();snd(l);edMsg("")}
+  edRefresh();
+}
+function edScoreClick(ev){
+  const box=$("edScore"),r=box.getBoundingClientRect(),x=ev.clientX-r.left,y=ev.clientY-r.top+box.scrollTop;
+  const row=ed.rows[Math.floor((y-4)/ed.rowH)];if(!row)return;
+  const c=row.bars.find(c=>x>=c.x&&x<c.x+c.w);if(!c)return;
+  ed.k=c.k;const b=edBar(),S=spbOf(b),f=Math.max(0,Math.min(.999,(x-c.x-14)/(c.w-20)));
+  ed.cur={k:c.k,s:Math.min(S-1,Math.floor(f*S))};
+  if(ed.sel&&ed.sel.k!==c.k)ed.sel=null;
+  edRefresh();
+}
+function edLen(q){
+  const x=selNote(),b=edBar();
+  if(!x){ed.entry=q;edRefresh();return}
+  const sb=ed.sc.bars[ed.sel.k],S=spbOf(sb);let nd=Math.round(q*sb.res);if(nd<1)return;
+  edSnap();
+  const v=vox(x.l),chord=sb.notes.filter(n=>n.s===x.s&&vox(n.l)===v),old=chord[0].d;
+  let lost=0;
+  if(ed.ripple){
+    const delta=nd-old;
+    sb.notes.forEach(n=>{if(vox(n.l)===v&&n.s>x.s)n.s+=delta});
+    lost=sb.notes.filter(n=>n.s>=S).length;sb.notes=sb.notes.filter(n=>n.s<S);
+    if(x.s+nd>S)nd=S-x.s;
+  }else{
+    if(x.s+nd>S)nd=S-x.s;
+    const before=sb.notes.length;sb.notes=sb.notes.filter(n=>!(vox(n.l)===v&&n.s>x.s&&n.s<x.s+nd));lost=before-sb.notes.length;
+  }
+  chord.forEach(n=>n.d=nd);edNorm(sb);ed.entry=q;
+  edMsg(lost?(lost>1?lost+" notes":"1 note")+(ed.ripple?" pushed past the end of the bar ":" under the longer note ")+(lost>1?"were":"was")+" removed. Undo brings "+(lost>1?"them":"it")+" back.":"");
+  edRefresh();
+}
+function edMove(dir){
+  const x=selNote();if(!x)return;const b=ed.sc.bars[ed.sel.k],S=spbOf(b),ns=x.s+dir;
+  if(ns<0||ns>=S){edMsg("Move the note into the next bar by deleting it and adding it there.");return}
+  if(b.notes.some(n=>n.s===ns&&n.l===x.l))return;
+  edSnap();x.s=ns;x.d=0;edNorm(b);ed.sel.s=ns;ed.cur={k:ed.sel.k,s:ns};edRefresh();
+}
+function edSetPad(l){
+  const x=selNote();if(!x||x.l===l)return;const b=ed.sc.bars[ed.sel.k];
+  if(b.notes.some(n=>n.s===x.s&&n.l===l)){edMsg(L[l].n+" is already on that step.");edRefresh();return}
+  edSnap();x.l=l;x.d=0;edNorm(b);ed.sel.l=l;initAudio();snd(l);edRefresh();
+}
+function edDelSel(){const x=selNote();if(!x)return;const b=ed.sc.bars[ed.sel.k];edSnap();b.notes=b.notes.filter(n=>n!==x);ed.sel=null;edRefresh()}
+function edConvertRes(b,nr){
+  const or=b.res;let moved=0;
+  b.notes.forEach(x=>{const e=x.s/or*nr,s=Math.round(e);if(Math.abs(e-s)>1e-6)moved++;x.s=s;x.d=Math.max(0,Math.round(x.d/or*nr))});
+  const before=b.notes.length;b.res=nr;edNorm(b);
+  return {moved,lost:before-b.notes.length};
+}
+function edSetTs(n,d){
+  const all=$("edTsAll").checked,sc=ed.sc;edSnap();let lost=0,moved=0;
+  const apply=b=>{
+    b.n=n;b.d=d;
+    if(!okRes(n,d,b.res)){const nr=[4,2,8,6,3,1].find(r=>okRes(n,d,r));const q=edConvertRes(b,nr);moved+=q.moved;lost+=q.lost}
+    const S=spbOf(b),bef=b.notes.length;b.notes=b.notes.filter(x=>x.s<S);lost+=bef-b.notes.length;edNorm(b);
+  };
+  sc.bars.forEach((b,i)=>{if(i===ed.k||(all&&i>ed.k))apply(b)});
+  ed.sel=null;ed.cur.s=Math.min(ed.cur.s,spbOf(edBar())-1);
+  edMsg((all&&ed.k<sc.bars.length-1?"Bars "+(ed.k+1)+" to "+sc.bars.length+" are":"Bar "+(ed.k+1)+" is")+" now in "+n+"/"+d+"."+(lost?" "+(lost>1?lost+" notes":"1 note")+" past the new bar end "+(lost>1?"were":"was")+" removed.":"")+(moved?" "+moved+" moved to the nearest grid step.":""));
+  edRefresh();
+}
+function edSetRes(nr){
+  const b=edBar();if(nr===b.res)return;edSnap();const q=edConvertRes(b,nr);
+  ed.sel=null;ed.cur.s=Math.min(Math.round(ed.cur.s/(nr/b.res)||0),spbOf(b)-1);if(ed.cur.s<0)ed.cur.s=0;
+  edMsg("Grid is now "+resName(nr)+"."+(q.moved?" "+(q.moved>1?q.moved+" notes":"1 note")+" moved to the nearest step.":"")+(q.lost?" "+q.lost+" merged.":""));
+  edRefresh();
+}
+function edBarOp(op){
+  const sc=ed.sc,b=edBar();
+  if(op==="ins"){edSnap();sc.bars.splice(ed.k+1,0,newBar(b.n,b.d,b.res));ed.k++;ed.sel=null;edMsg("Empty bar added after bar "+ed.k+".")}
+  else if(op==="dup"){edSnap();const c=JSON.parse(JSON.stringify(b));c.bpm=null;sc.bars.splice(ed.k+1,0,c);ed.k++;ed.sel=null;edMsg("Bar copied to bar "+(ed.k+1)+".")}
+  else if(op==="copy"){ed.clip=JSON.parse(JSON.stringify(b));edMsg("Bar "+(ed.k+1)+" copied. Pick another bar and tap Paste.")}
+  else if(op==="paste"&&ed.clip){edSnap();const c=JSON.parse(JSON.stringify(ed.clip));c.bpm=b.bpm;sc.bars[ed.k]=edNorm(c);ed.sel=null;edMsg("Pasted into bar "+(ed.k+1)+".")}
+  else if(op==="clear"){edSnap();b.notes=[];ed.sel=null;edMsg("Bar "+(ed.k+1)+" cleared.")}
+  else if(op==="del"&&sc.bars.length>1){edSnap();const keep=b.bpm;sc.bars.splice(ed.k,1);if(ed.k===0&&keep&&!sc.bars[0].bpm)sc.bars[0].bpm=keep;ed.k=Math.min(ed.k,sc.bars.length-1);ed.sel=null;edMsg("Bar deleted.")}
+  ed.cur={k:ed.k,s:Math.min(ed.cur.s,spbOf(edBar())-1)};ed.scrollTo=true;edRefresh();
+}
+function edGo(d){ed.k=Math.max(0,Math.min(ed.sc.bars.length-1,ed.k+d));ed.cur={k:ed.k,s:0};if(ed.sel&&ed.sel.k!==ed.k)ed.sel=null;ed.scrollTo=true;edRefresh()}
+function edSetBpm(v){
+  edSnap();const b=edBar();v=Math.round((+v||0)*10)/10;
+  if(!v){if(ed.k===0){edMsg("The first bar needs a tempo.");$("edBpm").value=b.bpm||ed.sc.bpm;return}b.bpm=null}else b.bpm=Math.min(300,Math.max(20,v));
+  if(ed.k===0)ed.sc.bpm=b.bpm;edRefresh();
+}
+
+/* step input from the kit, pads or keyboard */
+function edAdvance(n){
+  const sc=ed.sc;let k=ed.cur.k,s=ed.cur.s+n;
+  while(s>=spbOf(sc.bars[k])){s-=spbOf(sc.bars[k]);k++;if(k>=sc.bars.length){const p=sc.bars[k-1];sc.bars.push(newBar(p.n,p.d,p.res))}}
+  while(s<0){if(k===0){s=0;break}k--;s+=spbOf(sc.bars[k])}
+  ed.cur={k,s};if(ed.k!==k){ed.k=k;ed.scrollTo=true}
+  edRefresh();
+}
+function edPad(l){
+  if(!ed||!ed.step){return}
+  const k=ed.cur.k,s=ed.cur.s,b=ed.sc.bars[k];
+  if(!b.notes.some(n=>n.s===s&&n.l===l))edAdd(k,s,l);
+  ed.k=k;edRefresh();
+  clearTimeout(ed.advT);
+  ed.advT=setTimeout(()=>{if(ed&&ed.step){ed.sel=null;edAdvance(edEntrySteps(edBar())||1)}},140);
+}
+
+/* preview playback of the current bar */
+function edStop(){if(ed&&ed.prev){ed.prev=null;$("edPlay").textContent="▶ Hear bar";if(edOn)edRefresh()}}
+function edPlayBar(){
+  if(ed.prev){edStop();return}
+  initAudio();const b=edBar();
+  let bpm=ed.sc.bars[0].bpm||ed.sc.bpm||100;for(let i=1;i<=ed.k;i++)if(ed.sc.bars[i].bpm)bpm=ed.sc.bars[i].bpm;
+  const q=60/bpm,dur=qlen(b)*q,st=q/b.res,bu=beatQ(b)*q;
+  ed.prev={k:ed.k,t0:ac.currentTime+.12,next:0,s:null};$("edPlay").textContent="■ Stop";
+  const sched=at=>{
+    for(const x of b.notes)snd(x.l,Math.max(0,at+x.s*st-ac.currentTime));
+    for(let i=0;i*bu<dur-1e-6;i++)clk(at+i*bu,i===0,.45);
+  };
+  const tick=()=>{
+    const p=ed&&ed.prev;if(!p||!edOn)return;
+    if(p.k!==ed.k||edBar()!==b){edStop();return}
+    const now=ac.currentTime,t0=p.t0+p.next*dur;
+    if(now>t0-.15){sched(t0);p.next++}
+    const pos=((now-p.t0)%dur+dur)%dur;p.s=now<p.t0?0:pos/dur*spbOf(b);
+    edDrawGrid();edDrawScore();
+    requestAnimationFrame(tick);
+  };
+  tick();
+}
+function edSave(){
+  const nm=$("edName").value.trim();if(!nm){edMsg("Give the score a name first.");$("edName").focus();return false}
+  const all=allScores();
+  if(all[nm]&&nm!==ed.savedName&&ed.overwrite!==nm){ed.overwrite=nm;edMsg("A score called “"+nm+"” already exists. Tap Save again to replace it, or change the name.");return false}
+  ed.sc.name=nm;ed.sc.bpm=ed.sc.bars[0].bpm||ed.sc.bpm;ed.sc.at=Date.now();
+  storeScore(JSON.parse(JSON.stringify(ed.sc)));ed.savedName=nm;ed.dirty=false;edMsg("Saved as “"+nm+"”. Find it under Write & edit, My scores.");
+  return true;
+}
+function edPlaySong(){
+  ed.sc.name=$("edName").value.trim()||ed.sc.name;
+  const at=ed.k,sc=JSON.parse(JSON.stringify(ed.sc));
+  if(!sc.bars.some(b=>b.notes.length)){edMsg("Add some notes first.");return}
+  if(ed.dirty&&ed.savedName===sc.name)edSave();
+  edStop();edOn=false;$("ed").classList.remove("open");$("edAsk").style.display="none";const keep=ed;ed=null;
+  if(!loadScore(sc,at))return;
+  if(keep.dirty)say($("judge").textContent+" · not saved yet, open Write & edit to keep it");
+}
+
+/* wire up the editor UI */
+(function(){
+  const pad=$("edPad");pad.innerHTML=ROWS.map(l=>`<option value="${l}">${L[l].n}</option>`).join("");
+  $("edTn").innerHTML=Array.from({length:15},(_,i)=>`<option>${i+1}</option>`).join("");
+  $("edTd").innerHTML=[2,4,8,16].map(d=>`<option>${d}</option>`).join("");
+  $("edDone").onclick=()=>edClose(false);
+  $("edAskSave").onclick=()=>{if(edSave())edClose(true)};
+  $("edAskDrop").onclick=()=>edClose(true);
+  $("edAskKeep").onclick=()=>{$("edAsk").style.display="none"};
+  $("edSave").onclick=edSave;
+  $("edUndo").onclick=()=>edUndo(false);
+  $("edRedo").onclick=()=>edUndo(true);
+  $("edPlay").onclick=edPlayBar;
+  $("edSong").onclick=edPlaySong;
+  $("edMidi").onclick=()=>{ed.sc.name=$("edName").value.trim()||ed.sc.name;downloadMidi(ed.sc)};
+  $("edName").oninput=()=>{ed.dirty=true};
+  $("edPrevB").onclick=()=>edGo(-1);$("edNextB").onclick=()=>edGo(1);
+  $("edTn").onchange=$("edTd").onchange=()=>edSetTs(+$("edTn").value,+$("edTd").value);
+  $("edRes").onchange=e=>edSetRes(+e.target.value);
+  $("edBpm").onchange=e=>edSetBpm(e.target.value);
+  ["ins","dup","copy","paste","clear","del"].forEach(o=>{$("ed_"+o).onclick=()=>edBarOp(o)});
+  $("edRip").onchange=e=>{ed.ripple=e.target.checked};
+  $("edStep").onchange=e=>{ed.step=e.target.checked;ed.sel=null;if(ed.step){ed.cur.k=ed.k;edMsg("Step input: hit a pad on your kit, the pads or the keyboard. Each hit writes a note at the blue cursor, then the cursor moves on by the length you picked. Hits close together make a chord.")}else edMsg("");edRefresh()};
+  $("edRest").onclick=()=>edAdvance(edEntrySteps(edBar())||1);
+  $("edBack").onclick=()=>edAdvance(-(edEntrySteps(edBar())||1));
+  $("edPad").onchange=e=>edSetPad(+e.target.value);
+  $("edL").onclick=()=>edMove(-1);$("edR").onclick=()=>edMove(1);
+  $("edX").onclick=edDelSel;
+  $("edG").addEventListener("click",edGridClick);
+  $("edSc").addEventListener("click",edScoreClick);
+  $("edScore").addEventListener("scroll",()=>{if(edOn)edDrawScore()},{passive:true});
+  new ResizeObserver(()=>{if(edOn){edLayout();edDrawScore();edDrawGrid()}}).observe($("ed"));
+  addEventListener("keydown",e=>{
+    if(!edOn)return;
+    const tg=e.target&&e.target.tagName;if(tg==="INPUT"&&e.target.type!=="checkbox"||tg==="TEXTAREA"||tg==="SELECT")return;
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();edUndo(e.shiftKey);return}
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="y"){e.preventDefault();edUndo(true);return}
+    if(e.key==="Delete"||e.key==="Backspace"){e.preventDefault();edDelSel()}
+    else if(e.key==="ArrowLeft"){e.preventDefault();selNote()?edMove(-1):edGo(-1)}
+    else if(e.key==="ArrowRight"){e.preventDefault();selNote()?edMove(1):edGo(1)}
+    else if(e.key==="Escape"){if($("edAsk").style.display==="flex")$("edAsk").style.display="none";else edClose(false)}
+  });
+})();
+
+$("writeB").onclick=showWrite;
+$("emptyWrite").onclick=showWrite;
 songTime=-2;resize();requestAnimationFrame(frame);
 </script>
 <script>
-const APP_VERSION="1.9.0";
+const APP_VERSION="1.10.0";
 document.getElementById("ver").textContent="v"+APP_VERSION;
 try{
   const prev=localStorage.getItem("sw_ver");
-  if(prev&&prev!==APP_VERSION){
-    document.getElementById("judge").textContent="Updated to v"+APP_VERSION;
-    setTimeout(()=>{if(typeof showNews==="function")showNews(APP_VERSION)},500);
-  }
+  if(prev&&prev!==APP_VERSION){document.getElementById("judge").textContent="Updated to v"+APP_VERSION;setTimeout(()=>{try{showNews(APP_VERSION)}catch(e){}},400)}
   localStorage.setItem("sw_ver",APP_VERSION);
 }catch(e){}
 if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)){
