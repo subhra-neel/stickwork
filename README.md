@@ -1,4 +1,4 @@
-# Stickwork v1.10.0
+# Stickwork v1.11.1
 
 Personal drum practice app (installable web app) for an e-drum kit, touch screen or keyboard.
 
@@ -16,6 +16,15 @@ Personal drum practice app (installable web app) for an e-drum kit, touch screen
 ## Updating
 For a new version, replace `index.html` and `sw.js`. Open the app and tap **Update** on the banner.
 The version is shown under Settings, and What's new appears after an update.
+
+## What's in v1.11.1
+- Single letters are always chords, in capitals or small letters: g or G is the G chord, am is A minor, c/g is C/G.
+- Sargam needs the full name: Sa, Re, Ga, Ma, Pa, Dha, Ni (any case). Short forms like S, M or G are not read as sargam.
+
+## What's in v1.11.0
+- From chords now reads sargam: | Sa | Re | Ga | Pa |, including Devanagari (सा रे ग म प ध नि).
+- Komal notes: Re(k) or Reb. Tivra Ma: Ma' or Ma#. Minor, 7th and slash chords work too: Rem, Pa7, Sa/Pa.
+- New setting, Sa is: choose the pitch of Sa (C by default).
 
 ## What's in v1.10.0
 - Write & edit: write your own drum notation bar by bar, or edit anything Stickwork turned into notation (lessons, chord charts, MIDI, MuseScore, Guitar Pro).

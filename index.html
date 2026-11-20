@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<!-- Stickwork v1.10.0 -->
+<!-- Stickwork v1.11.1 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Stickwork – drum practice</title>
@@ -934,7 +934,7 @@ function showHelp(){
   <ol><li>Use a USB cable (a USB-C adapter on a tablet).</li><li>Open Stickwork in Chrome and tap <b>Connect drum kit</b>. Allow MIDI access.</li><li>Hit a pad. Its lane should light up.</li><li>Open Settings and run <b>Calibrate hits</b> once.</li></ol>
   <p>If a pad does nothing, the message line shows its note number. Unplug and re-plug the cable, then try again.</p>
   <h3>Getting music in</h3>
-  <ul><li><b>From chords:</b> paste chords from Ultimate Guitar, or type them like | Am | F | C | G |. Pick a style and Stickwork writes the drums.</li><li><b>MuseScore:</b> download the MIDI or MusicXML file, then Tools, Open file.</li><li><b>Songsterr:</b> open the Guitar Pro file (.gp, .gp5) you downloaded. Only the drum track is used.</li><li><b>PDF:</b> a PDF is a picture, so notes cannot be read from it. Use MIDI or MusicXML instead.</li><li><b>No drums in the file, or an mp3:</b> Stickwork guesses the chords bar by bar and opens them in From chords so you can correct them and build a drum part.</li></ul>
+  <ul><li><b>From chords:</b> paste chords from Ultimate Guitar, or type them like | Am | F | C | G |, or in sargam like | Sa | Re | Ga | Pa |. Pick a style and Stickwork writes the drums.</li><li><b>MuseScore:</b> download the MIDI or MusicXML file, then Tools, Open file.</li><li><b>Songsterr:</b> open the Guitar Pro file (.gp, .gp5) you downloaded. Only the drum track is used.</li><li><b>PDF:</b> a PDF is a picture, so notes cannot be read from it. Use MIDI or MusicXML instead.</li><li><b>No drums in the file, or an mp3:</b> Stickwork guesses the chords bar by bar and opens them in From chords so you can correct them and build a drum part.</li></ul>
   <h3>Writing your own notation</h3>
   <ul><li>Tap <b>Write &amp; edit</b>. Create a new score, or edit the song that is loaded (lesson, chords, MIDI or a score file).</li><li>Tap the grid to add a note. Tap a note to select it, tap again to remove it. Tap a bar in the notation to jump to it.</li><li>Pick a length to change the selected note. With <b>Shift later notes</b> on, the rest of the bar moves along. With it off, the longer note writes over what follows.</li><li>Change the time signature, grid and tempo for each bar. Tick <b>and every bar after</b> to change the rest of the song too.</li><li><b>Step input</b> writes a note at the cursor for every pad you hit on the kit.</li><li><b>Practise this</b> loads the score from the bar you are on. <b>Save</b> keeps it under My scores.</li></ul>
   <h3>Headphones</h3>
@@ -1134,6 +1134,8 @@ function assignStick(out){
   });
 }
 const NEWS=[
+{v:"1.11.1",items:["Single letters are always chords, in capitals or small letters: g or G is the G chord, am is A minor, c/g is C/G.","Sargam needs the full name: Sa, Re, Ga, Ma, Pa, Dha, Ni (any case). Short forms like S, M or G are not read as sargam."]},
+{v:"1.11.0",items:["From chords now reads sargam: type | Sa | Re | Ga | Pa | instead of | C | D | E | G |. Devanagari works too (सा रे ग म प ध नि).","Komal notes: Re(k) or Reb. Tivra Ma: Ma' or Ma#. Minor, 7th and slash chords work the same way as letter chords: Rem, Pa7, Sa/Pa.","New setting, Sa is: choose the pitch of Sa (C by default). Chord names show both, for example Re (D)."]},
 {v:"1.10.0",items:["New Write & edit button: write your own drum notation bar by bar on a step grid, with real notation drawn above it (notes, stems, beams, rests and triplets).","Each bar has its own time signature (1 to 15 beats over 2, 4, 8 or 16), grid (8ths, 16ths, 32nds, triplets) and optional tempo change. Insert, duplicate, copy, paste, clear and delete bars.","Change any note's length: Shift later notes moves the rest of the bar along, like a notation program. Move notes earlier or later, or swap them to another pad.","Edit anything Stickwork turned into notation: lessons, chord charts, MIDI, MuseScore and Guitar Pro files. Load it, tap Write & edit, then Edit. Bar numbers, loops and the click follow your time signature changes.","Step input: hit pads on your kit and each hit is written at the cursor, then the cursor moves on.","Save scores on the device, practise them like any song, and save them as MIDI files."]},
 {v:"1.9.0",items:["Open file now takes songs with no drum part: a MIDI or score of a melody (such as a harmonica or piano line), and audio files (mp3, wav, m4a, mp4). Stickwork guesses a chord for each bar and opens it in From chords, where you can fix any chord before building the drums.","Imported drum parts are trimmed so they can be played with two hands and two feet (no more than two hand notes at once). Switch this off under Tools, Keep drum parts playable.","Chords guessed from audio are a rough guess. Check them against the song."]},
 {v:"1.8.0",items:["New From chords button: paste chords from Ultimate Guitar or type your own, pick a style and tempo, and Stickwork writes a drum part for them. Chord names show above the staff and a bass and chord backing plays along. Verses play lighter and choruses bigger, with fills and a crash and stop ending.","You can now open MuseScore (MusicXML) and Guitar Pro files (.gp, .gp3, .gp4, .gp5) from Tools, Open file. Only the drum part is used. PDFs are pictures, so they cannot be read.","6/8 and other eighth-note time signatures in MIDI files now count their beats properly.","Typing in a text box no longer plays drum sounds."]},
@@ -1499,7 +1501,31 @@ async function audioToChart(buf,name){
 const NPC={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 const CHORD_RE=/^([A-G])([#b♯♭]?)((?:maj|min|dim|aug|sus|add|M|m|-|\+|°|ø|Δ|o|\d+|[#b♯♭]\d+|\(|\)|,)*)(?:\/([A-G])([#b♯♭]?))?$/;
 const accPc=a=>a==="#"||a==="♯"?1:a==="b"||a==="♭"?-1:0;
-function parseChord(tok){
+/* sargam: Sa Re Ga Ma Pa Dha Ni, komal (Re(k), Reb, Re_) and tivra (Ma', Ma#, Ma(t)), Devanagari, with chord suffixes (Rem, Pa7, Sa/Pa) */
+let saKey=0;
+const SWARA={sa:0,re:2,ri:2,rey:2,ga:4,ma:5,pa:7,dha:9,dh:9,da:9,ni:11,"सा":0,"स":0,"रे":2,"र":2,"ग":4,"गा":4,"म":5,"मा":5,"प":7,"पा":7,"ध":9,"धा":9,"नि":11,"नी":11,"ऩ":11};
+const SW_RE=/^[.·]*(sa|rey|re|ri|ga|ma|pa|dha|dh|da|ni|सा|स|रे|र|गा|ग|मा|म|पा|प|धा|ध|नि|नी)(\((?:k|komal|t|tivra)\)|_|♭|b|#|♯|'|’|`)?[.·'’`]*(.*)$/i;
+function swaraPc(s){
+  const m=SW_RE.exec(s);if(!m)return null;
+  let pc=SWARA[m[1].toLowerCase()];if(pc===undefined)return null;
+  const a=(m[2]||"").toLowerCase();
+  if(/\(k|_|♭|^b$/.test(a)){if(pc===2||pc===4||pc===9||pc===11)pc--;}
+  else if(/\(t|#|♯/.test(a)||(/['’`]/.test(a)&&pc===5)){if(pc===5)pc++;}
+  return {pc:(pc+saKey)%12,rest:m[3]||""};
+}
+function parseSargam(tok){
+  const [main,bassTok,...more]=tok.split("/");if(more.length)return null;
+  const s=swaraPc(main);if(!s)return null;
+  const NM=[1,3,6,8,10].includes(saKey)?["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"]:CN;
+  let west=NM[s.pc]+s.rest;
+  if(bassTok!==undefined){const b=swaraPc(bassTok);if(!b||b.rest)return null;west+="/"+NM[b.pc]}
+  const c=parseWestern(west);if(!c)return null;
+  c.n=tok+" ("+west+")";return c;
+}
+function parseChord(tok){return parseWestern(tok)||parseSargam(tok)}
+function parseWestern(tok){
+  /* single letters are chords in either case: g = G, am = Am, c/g = C/G */
+  tok=tok.replace(/^[a-g]/,c=>c.toUpperCase()).replace(/\/([a-g])/,(x,c)=>"/"+c.toUpperCase());
   const m=CHORD_RE.exec(tok);if(!m)return null;
   const root=(NPC[m[1]]+accPc(m[2])+12)%12,q=(m[3]||"").replace(/[(),]/g,"");
   const minor=/^(min|m(?!aj)|-)/.test(q),dim=/dim|°|ø|o/.test(q),aug=/aug|\+/.test(q);
@@ -1668,6 +1694,7 @@ function buildChartBars(ch,parsed,T,st){
 const fm=n=>440*Math.pow(2,(n-69)/12);
 function openChart(ch){
   const T=CST[ch.ts]||CST["4/4"],st=T.styles.find(s=>s.id===ch.style)||T.styles[0];
+  saKey=(+ch.sa||0)%12;
   const parsed=parseChart(ch.text,+ch.per||1);
   if(!parsed.bars.length){say("No chords found. Type them like  | Am | F | C | G |");return false}
   if(parsed.bars.length>400){say("That is "+parsed.bars.length+" bars. Please keep a chart under 400 bars.");return false}
@@ -1700,7 +1727,7 @@ function openChart(ch){
   say(`${ch.name} · ${bars.length} bars · ${ch.ts} ${st.n} · ${bpm} BPM. Chord names show above the staff.`);
   return true;
 }
-const CHART_DEF={name:"My chord chart",text:"",ts:"4/4",bpm:0,style:"rock",per:1,dyn:"auto",fill:"4",end:"stop"};
+const CHART_DEF={name:"My chord chart",text:"",ts:"4/4",bpm:0,style:"rock",per:1,dyn:"auto",fill:"4",end:"stop",sa:0};
 function showChords(pre){
   const ch=Object.assign({},CHART_DEF,pre||jget("sw_chartlast",{}));
   if(!CST[ch.ts])ch.ts="4/4";
@@ -1708,7 +1735,7 @@ function showChords(pre){
   const opt=(arr,v)=>arr.map(([val,lab])=>`<option value="${val}"${String(val)===String(v)?" selected":""}>${lab}</option>`).join("");
   panel(`<h2>Chords to drums</h2>
   ${ch.note?`<p style="margin:0 0 8px;font-size:13px;background:var(--stage);border-radius:8px;padding:6px 8px">${esc(ch.note)}</p>`:""}
-  <p style="margin:0 0 6px;color:var(--mute);font-size:13px">Paste chords from Ultimate Guitar, or type your own. Use | between bars, or put one chord per bar. Headings like [Verse] and [Chorus] make the drums play bigger or lighter.</p>
+  <p style="margin:0 0 6px;color:var(--mute);font-size:13px">Paste chords from Ultimate Guitar, or type your own, as chord letters (C | D, or c | d) or sargam names (Sa | Re). Use | between bars, or put one chord per bar. Headings like [Verse] and [Chorus] make the drums play bigger or lighter.</p>
   <textarea id="cText" spellcheck="false" autocapitalize="off" placeholder="[Verse]&#10;| Am | F | C | G |&#10;[Chorus]&#10;| F C | G Am |">${esc(ch.text)}</textarea>
   <div id="cInfo" class="cinfo"></div>
   <div class="fgrid">
@@ -1720,11 +1747,12 @@ function showChords(pre){
    <label>Dynamics<select id="cDyn" class="btn">${opt([["auto","Follow the sections"],[0,"Always light"],[1,"Always medium"],[2,"Always big"]],ch.dyn)}</select></label>
    <label>Fills<select id="cFill" class="btn">${opt([["4","Every 4 bars"],["8","Every 8 bars"],["none","No fills"]],ch.fill)}</select></label>
    <label>Ending<select id="cEnd" class="btn">${opt([["stop","Crash and stop"],["keep","Keep playing"]],ch.end)}</select></label>
+   <label>Sa is (for sargam)<select id="cSa" class="btn">${opt(["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"].map((n,i)=>[i,n+(i===0?" (default)":"")]),+ch.sa||0)}</select></label>
   </div>
-  <p class="cnote">"Chords per bar" only applies to lines without | bar lines.</p>
+  <p class="cnote">"Chords per bar" only applies to lines without | bar lines. Sargam: Sa Re Ga Ma Pa Dha Ni (or सा रे ग म प ध नि). Komal: Re(k) or Reb. Tivra Ma: Ma' or Ma#. Add m for minor or 7 like a chord: Rem, Pa7, Sa/Pa.</p>
   <div class="btns"><button class="btn main" id="cGo">Build and practise</button><button class="btn" id="cSave">Save chart</button><button class="btn" id="rClose">Close</button></div>
   ${names.length?`<h3>Saved charts</h3>`+names.map((n,i)=>`<div class="srow"><button class="btn" data-co="${i}">${esc(n)}</button><button class="btn" data-cd="${i}">Delete</button></div>`).join(""):""}`);
-  const rd=()=>({name:$("cName").value.trim()||"My chord chart",text:$("cText").value,ts:$("cTs").value,bpm:+$("cBpm").value||0,style:$("cSty").value,per:+$("cPer").value,dyn:$("cDyn").value,fill:$("cFill").value,end:$("cEnd").value});
+  const rd=()=>({name:$("cName").value.trim()||"My chord chart",text:$("cText").value,ts:$("cTs").value,bpm:+$("cBpm").value||0,style:$("cSty").value,per:+$("cPer").value,dyn:$("cDyn").value,fill:$("cFill").value,end:$("cEnd").value,sa:+$("cSa").value});
   const fillSty=(keep)=>{
     const T=CST[$("cTs").value];
     $("cSty").innerHTML=T.styles.map(s=>`<option value="${s.id}">${s.n}</option>`).join("");
@@ -1733,12 +1761,13 @@ function showChords(pre){
   };
   fillSty(ch.style);
   const info=()=>{
+    saKey=+$("cSa").value||0;
     const p=parseChart($("cText").value,+$("cPer").value);
-    if(!p.bars.length){$("cInfo").textContent=$("cText").value.trim()?"No chords found yet. Chords look like Am, F#m7, Bb or C/G.":"";return}
+    if(!p.bars.length){$("cInfo").textContent=$("cText").value.trim()?"No chords found yet. Chords are single letters like Am, g, F#m7 or C/G. Sargam uses full names like Sa, Re, Ga, Pa.":"";return}
     const secs=[];p.bars.forEach(b=>{if(b.start||!secs.length)secs.push([b.sec,0]);secs[secs.length-1][1]++});
     $("cInfo").textContent=p.bars.length+" bars"+(p.heads?": "+secs.map(s=>s[0]+" ("+s[1]+")").join(", "):"")+". First chords: "+p.bars.slice(0,6).map(b=>b.ch.map(c=>c.c.n).join(" ")).join(" · ");
   };
-  $("cText").oninput=info;$("cPer").onchange=info;info();
+  $("cText").oninput=info;$("cPer").onchange=info;$("cSa").onchange=info;info();
   $("cTs").onchange=()=>{ch.bpm=0;fillSty()};
   $("cSty").onchange=()=>{ch.bpm=0;const s=CST[$("cTs").value].styles.find(x=>x.id===$("cSty").value);$("cBpm").value=s.bpm};
   $("rClose").onclick=closePanel;
@@ -2529,7 +2558,7 @@ $("emptyWrite").onclick=showWrite;
 songTime=-2;resize();requestAnimationFrame(frame);
 </script>
 <script>
-const APP_VERSION="1.10.0";
+const APP_VERSION="1.11.1";
 document.getElementById("ver").textContent="v"+APP_VERSION;
 try{
   const prev=localStorage.getItem("sw_ver");
