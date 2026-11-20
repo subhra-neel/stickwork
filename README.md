@@ -1,4 +1,4 @@
-# Stickwork v1.11.1
+# Stickwork v1.12.0
 
 Personal drum practice app (installable web app) for an e-drum kit, touch screen or keyboard.
 
@@ -16,6 +16,14 @@ Personal drum practice app (installable web app) for an e-drum kit, touch screen
 ## Updating
 For a new version, replace `index.html` and `sw.js`. Open the app and tap **Update** on the banner.
 The version is shown under Settings, and What's new appears after an update.
+
+## What's in v1.12.0 (learner update)
+- Coach me: tap a lesson for a coach card that explains the groove in everyday terms, then five steps that run themselves: listen, learn it with wait-for-me, 70%, 85% and full speed (pass each with 85%).
+- Rudiments: eight sticking patterns (singles, doubles, single and double paradiddle, paradiddle-diddle, triplets, five-stroke roll, paradiddle groove). The Daily workout starts with one.
+- Silent bars (Tools): the click, backing and app-played drums drop out every other bar, 2 on 2 off, or 4 on 4 off. Results compare your timing with and without the click.
+- Bar-by-bar map on the results card; tap a bar to loop it 15% slower.
+- Stroke evenness from your kit's hit strength on lessons.
+- Progress opens My progress: practice calendar, lessons mastered per level, almost-there lessons, and mastered lessons due for a review.
 
 ## What's in v1.11.1
 - Single letters are always chords, in capitals or small letters: g or G is the G chord, am is A minor, c/g is C/G.

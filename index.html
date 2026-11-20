@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<!-- Stickwork v1.11.1 -->
+<!-- Stickwork v1.12.0 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Stickwork – drum practice</title>
@@ -116,6 +116,32 @@ summary{cursor:pointer}
 @media (pointer:coarse){#ed .btn{min-height:44px}}
 #upd{display:none;position:fixed;z-index:50;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 8px);background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 12px;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 4px 18px #0006}
 #upd button{border:0;border-radius:9px;padding:7px 12px;font:inherit;font-weight:700;background:var(--bg);color:var(--ink);cursor:pointer}
+#resCard .bmap{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 2px}
+#resCard .bmap button{min-width:34px;height:30px;padding:0 5px;border-radius:7px;border:2px solid transparent;font:inherit;font-size:12px;font-weight:700;color:#fff;cursor:pointer}
+#resCard .bmap button.sil{border-color:var(--ink);border-style:dashed}
+#resCard .bmap .g{background:#19a463}#resCard .bmap .a{background:#a66800}#resCard .bmap .r{background:#d64550}
+#resCard .gbox{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;background:var(--bg)}
+#resCard .gbox h3{margin:0 0 4px}
+#resCard .gbox .btns{margin-top:6px}
+#resCard .ladder{list-style:none;padding:0;margin:6px 0}
+#resCard .ladder li{margin:4px 0}
+#resCard .lsb{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:none;border:0;padding:4px 2px;color:var(--ink);font:inherit;cursor:pointer;border-radius:8px}
+#resCard .lsb:hover{background:var(--bg)}
+#resCard .dot{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;box-sizing:border-box}
+#resCard .done .dot{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+#resCard .now .dot{border-color:var(--ink)}
+#resCard .now b{text-decoration:underline;text-underline-offset:3px}
+#resCard .ladder small{display:block;color:var(--mute);font-size:13px;font-weight:500}
+#resCard .tip{background:var(--bg);border-left:4px solid var(--ink);border-radius:8px;padding:8px 10px;margin:10px 0}
+#resCard .mrow{display:flex;justify-content:space-between;font-size:14px;margin-top:6px}
+#resCard .mrow span{color:var(--mute)}
+#resCard .mbar{height:8px;border-radius:5px;background:var(--line);overflow:hidden;margin:3px 0 4px}
+#resCard .mbar>i{display:block;height:100%;border-radius:0;margin:0;background:var(--ink)}
+#resCard .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin:8px 0}
+#resCard .kpis div{background:var(--bg);border-radius:10px;padding:8px}
+#resCard .kpis b{display:block;font-size:22px;line-height:1.1}
+#resCard .kpis span{color:var(--mute);font-size:12px}
+#resCard .cal{display:block;width:100%;max-width:300px;height:auto;margin:4px 0}
 </style>
 </head>
 <body>
@@ -148,6 +174,7 @@ summary{cursor:pointer}
     <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="trn" type="checkbox" style="display:inline;margin:0"> Speed trainer</label>
     <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="bkOn" type="checkbox" checked style="display:inline;margin:0"> Backing music</label>
     <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="simp" type="checkbox" checked style="display:inline;margin:0"> Keep drum parts playable</label>
+    <label class="btn" style="display:flex;gap:6px;align-items:center">Silent bars <select id="silSel" aria-label="Silent bars" style="font:inherit;font-weight:700;background:var(--panel);color:var(--ink);border:0"><option value="0">Off</option><option value="1">Every other bar</option><option value="2">2 on, 2 off</option><option value="3">4 on, 4 off</option></select></label>
   </div>
   <div class="row"><span>Position</span><input id="seek" type="range" min="0" max="1000" value="0" aria-label="Song position"><b id="pos">0:00</b></div>
   <div class="bar" style="padding-top:4px">
@@ -249,6 +276,10 @@ let chordMarks=[],notes=[],endT=0,playing=false,fin=false,songTime=0,startWall=0
 let score=0,jc=0,combo=0,bestCombo=0,misses=0,ac=null,audio=null;
 let loopA=null,loopB=null,loopOn=false,beats=[],tsNum=4,bd=.5,nb=0,seeking=false;
 let practice=false,waiting=false,gapBeats=0,gapEnd=-Infinity;
+/* silent bars (v1.12): the click, backing and app-played drums drop out so you keep time yourself */
+let silentMode=0,silOK=false,silBase=0,silS={n:0,s:0,a:0,m:0},clkS={n:0,s:0,a:0,m:0};
+const vs=L.map(()=>[]);
+try{const v=+localStorage.getItem("sw_silent");if(v>=0&&v<=3)silentMode=v}catch(e){}
 const SHORT=["Cr1","Hat","Open","Ped","Snr","Rim","T1","T2","T3","T4","Cr2","Rde","Kick"];
 const flash=new Array(L.length).fill(0);
 const fbs=[];
@@ -416,7 +447,8 @@ function updLoop(){
 function reset(){
   notes.forEach(n=>{n.j=focus[n.l]?0:1;n.s=0;n.r=focus[n.l]?"":"skip"});
   score=jc=combo=bestCombo=misses=0;heard=false;playing=false;fin=false;songTime=-lead();setNb(songTime);waiting=false;gapEnd=-Infinity;s0=j0=0;ls.forEach(q=>{q.n=q.s=q.a=q.m=0});missT.length=0;offL.length=0;
-  if(audio){audio.pause();audio.currentTime=0}
+  silS={n:0,s:0,a:0,m:0};clkS={n:0,s:0,a:0,m:0};vs.forEach(a=>a.length=0);
+  if(audio){audio.pause();audio.currentTime=0;audio.muted=false}
   stat();
 }
 function play(){
@@ -429,7 +461,7 @@ function play(){
   $("play").textContent="Pause";wake(true);
 }
 function pause(){
-  songTime=cur();playing=false;waiting=false;wake(false);if(audio)audio.pause();
+  songTime=cur();playing=false;waiting=false;wake(false);if(audio){audio.pause();audio.muted=false}
   $("play").textContent="Play";
 }
 function finish(){
@@ -437,7 +469,7 @@ function finish(){
   $("play").textContent="Play";
   say(heard?"Listen-through done – not counted in your progress":`Done – ${jc?Math.round(score/jc*100):0}% accuracy, ${misses} missed, best run ${bestCombo}`);
 }
-function hit(l,ts,kit){
+function hit(l,ts,kit,vel){
   if(edOn){initAudio();if(!kit||soundAll)snd(l);edPad(l);return}
   initAudio();if(!kit||soundAll)snd(l);flash[l]=1;if(calib){calib.hit(ts);return}if(free)return;
   if(!playing||songTime<-0.15)return;
@@ -459,12 +491,13 @@ function hit(l,ts,kit){
     if(!n.j&&n.l===l){const d=Math.abs(n.t-t);if(d<bd){bd=d;best=n}}
   }
   if(!best){combo=0;stat();if(practice&&waiting){const w=[...new Set(notes.filter(n=>!n.j&&Math.abs(n.t-songTime)<.02).map(n=>L[n.l].n))];say("Waiting for "+w.join(" + "));return}say(L[l].n+" – no note there");return}
-  const ms=Math.round((t-best.t)*1000),ad=Math.abs(ms);
-  if(!practice){const q=ls[l];q.n++;q.s+=ms;q.a+=ad;offL.push(ms)}
+  const ms=Math.round((t-best.t)*1000),ad=Math.abs(ms),sv=silentAt(best.t);
+  if(!practice){const q=ls[l];q.n++;q.s+=ms;q.a+=ad;offL.push(ms);const z=sv?silS:clkS;z.n++;z.s+=ms;z.a+=ad;if(vel)vs[l].push(vel)}
   best.j=1;best.r="hit";jc++;combo++;if(combo>bestCombo)bestCombo=combo;
   let g;if(practice){score+=1;stat();say("Hit");return}
-  if(ad<=win[0]*1000){score+=1;g="Perfect"}else if(ad<=win[1]*1000){score+=.7;g="Good · "+ad+" ms "+(ms<0?"early":"late")}
-  else{score+=.4;g="Off · "+ad+" ms "+(ms<0?"early":"late")}
+  if(ad<=win[0]*1000){score+=1;best.g=1;g="Perfect"}else if(ad<=win[1]*1000){score+=.7;best.g=.7;g="Good · "+ad+" ms "+(ms<0?"early":"late")}
+  else{score+=.4;best.g=.4;g="Off · "+ad+" ms "+(ms<0?"early":"late")}
+  if(sv){say("Silent bar – keep the time going");stat();return}
   say(g);stat();
   fbSet(l,ad<=win[0]*1000?"Perfect":(ms<0?"Early":"Late"),ad<=win[0]*1000?"#19a463":ad<=win[1]*1000?"#d98a00":"#d64550");
 }
@@ -515,14 +548,29 @@ function draw(){
     }
     ctx.textAlign="center";
   }
+  if(silOK){
+    const tTop=songTime+hy/px;
+    for(let k=Math.max(0,barIdx(Math.max(0,songTime-(H-hy)/px)));k<10000;k++){
+      const t0=barStartT(k),t1=barStartT(k+1);
+      if(t0>tTop||!(t1>t0))break;
+      if(!silentAt((t0+t1)/2))continue;
+      const y0=Math.min(H,hy-(t0-songTime)*px),y1=Math.max(0,hy-(t1-songTime)*px);
+      ctx.globalAlpha=.07;ctx.fillStyle=C.ink;ctx.fillRect(0,y1,W,y0-y1);
+      ctx.globalAlpha=.6;ctx.strokeStyle=C.ink;ctx.lineWidth=1;ctx.setLineDash([6,6]);
+      ctx.beginPath();ctx.moveTo(0,y0);ctx.lineTo(W,y0);ctx.moveTo(0,y1);ctx.lineTo(W,y1);ctx.stroke();ctx.setLineDash([]);
+      ctx.globalAlpha=.85;ctx.fillStyle=C.ink;ctx.font='700 13px "Barlow Semi Condensed",system-ui,sans-serif';ctx.textAlign="left";
+      if(y0-y1>22)ctx.fillText("Silent bar · keep time",8,y0-8);
+      ctx.globalAlpha=1;ctx.textAlign="center";
+    }
+  }
   for(const n of notes){
     const y=hy-(n.t-songTime)*px;
     if(y<-20)break;
-    if(y>H+20||n.r==="hit"||n.r==="skip")continue;
+    if(y>H+20||n.r==="hit"||n.r==="skip"||(silOK&&silentAt(n.t)))continue;
     ctx.globalAlpha=n.r==="miss"?.25:1;ctx.fillStyle=L[n.l].c;
     ctx.beginPath();
     if(ctx.roundRect)ctx.roundRect(n.l*lw+4,y-8,lw-8,16,6);else ctx.rect(n.l*lw+4,y-8,lw-8,16);
-    ctx.fill();if(waiting&&!n.j&&Math.abs(n.t-songTime)<.001){ctx.strokeStyle=C.ink;ctx.lineWidth=3;ctx.stroke()}if(stickOn&&n.h){ctx.fillStyle="#14151d";ctx.font="700 11px sans-serif";ctx.textAlign="center";ctx.fillText(n.h,n.l*lw+lw/2,y+4)}ctx.globalAlpha=1;
+    ctx.fill();if(waiting&&!n.j&&Math.abs(n.t-songTime)<.001){ctx.strokeStyle=C.ink;ctx.lineWidth=3;ctx.stroke()}if((stickOn||n.hf)&&n.h){ctx.fillStyle="#14151d";ctx.font="700 11px sans-serif";ctx.textAlign="center";ctx.fillText(n.h,n.l*lw+lw/2,y+4)}ctx.globalAlpha=1;
   }
   for(const [lt,lb] of [[loopA,"A"],[loopB,"B"]]){
     if(lt==null)continue;
@@ -541,6 +589,10 @@ function draw(){
     ctx.globalAlpha=a;ctx.font='700 15px "Barlow Semi Condensed",system-ui,sans-serif';ctx.textAlign="center";
     const fx=Math.min(W-26,Math.max(26,f.l*lw+lw/2)),fy=hy-30-(1-a)*18;
     ctx.lineWidth=4;ctx.strokeStyle=C.stage;ctx.strokeText(f.s,fx,fy);ctx.fillStyle=f.c;ctx.fillText(f.s,fx,fy);ctx.globalAlpha=1;
+  }
+  if(playing&&silOK&&songTime>=0&&songTime>=gapEnd&&silentAt(songTime)){
+    ctx.globalAlpha=.9;ctx.fillStyle=C.ink;ctx.font='700 40px "Barlow Semi Condensed",system-ui,sans-serif';ctx.textAlign="center";
+    ctx.fillText("Keep time",W/2,H*.4);ctx.font='600 15px "Barlow Semi Condensed",system-ui,sans-serif';ctx.fillText("the click is off – count it in your head",W/2,H*.4+24);ctx.globalAlpha=1;
   }
   if(playing&&(songTime<0||songTime<gapEnd)){
     ctx.fillStyle=C.ink;ctx.font='700 64px "Barlow Semi Condensed",system-ui,sans-serif';
@@ -570,6 +622,15 @@ function drawStaff(){
     g.beginPath();g.moveTo(x,bar?Y(8):Y(9.5));g.lineTo(x,bar?Y(0):Y(-.5));g.stroke();
   });
   g.globalAlpha=1;
+  if(silOK){
+    for(let k=Math.max(0,barIdx(Math.max(0,songTime-(ph-clefW)/sx)));k<10000;k++){
+      const t0=barStartT(k),t1=barStartT(k+1),x0=ph+(t0-songTime)*sx,x1=ph+(t1-songTime)*sx;
+      if(x0>W||!(t1>t0))break;
+      if(!silentAt((t0+t1)/2))continue;
+      g.globalAlpha=.08;g.fillStyle=C.ink;g.fillRect(x0,0,x1-x0,H);g.globalAlpha=.75;g.fillStyle=C.mute;
+      g.font="700 11px system-ui,sans-serif";g.textAlign="left";g.fillText("silent",x0+4,H-4);g.globalAlpha=1;
+    }
+  }
   if(chordMarks.length){
     g.font="700 "+Math.max(11,Math.round(sp*1.7))+"px system-ui,sans-serif";g.textAlign="left";g.fillStyle=C.ink;
     for(const m of chordMarks){
@@ -584,7 +645,7 @@ function drawStaff(){
     if(x>W+14)break;
     if(x<clefW-14)continue;
     const y=Y(SP[n.l]);
-    g.globalAlpha=(n.r==="hit"||n.r==="skip"||n.r==="miss")?.28:1;
+    g.globalAlpha=(n.r==="hit"||n.r==="skip"||n.r==="miss")?.28:(silOK&&silentAt(n.t))?.16:1;
     for(let s=10;s<=SP[n.l];s+=2){const ly=Y(s);g.strokeStyle=C.ink;g.lineWidth=1.5;g.beginPath();g.moveTo(x-sp,ly);g.lineTo(x+sp,ly);g.stroke()}
     if(XH[n.l]){
       const r=sp*.5;
@@ -596,7 +657,7 @@ function drawStaff(){
       g.beginPath();g.ellipse(x,y,sp*.66,sp*.48,-.35,0,6.2832);
       g.fillStyle=L[n.l].c;g.fill();g.strokeStyle=C.ink;g.lineWidth=1.3;g.stroke();
     }
-    if(stickOn&&n.h){g.fillStyle=C.ink;g.font="700 "+Math.round(sp*.9)+"px sans-serif";g.textAlign="center";g.fillText(n.h,x,Y(n.h==="R"?-3.2:-5.2))}
+    if((stickOn||n.hf)&&n.h){g.fillStyle=C.ink;g.font="700 "+Math.round(sp*.9)+"px sans-serif";g.textAlign="center";g.fillText(n.h,x,Y(n.h==="R"?-3.2:-5.2))}
     if(waiting&&!n.j&&Math.abs(n.t-songTime)<.001){
       g.globalAlpha=1;g.strokeStyle=C.ink;g.lineWidth=2.5;g.beginPath();g.arc(x,y,sp*.95,0,6.2832);g.stroke();
     }
@@ -625,7 +686,7 @@ function bestText(){
 function saveRun(acc,miss){
   const h=jget("sw_hist",{});
   const e=h[songId]||(h[songId]={name:songName,runs:[]});
-  e.runs.push({d:Date.now(),acc,miss,tempo:Math.round(rate*100),perf:perf?1:0});
+  e.runs.push({d:Date.now(),acc,miss,tempo:Math.round(rate*100),perf:perf?1:0,...(silOK?{sil:silentMode}:{})});
   if(e.runs.length>40)e.runs.shift();
   jset("sw_hist",h);
 }
@@ -651,6 +712,11 @@ function passDone(){
 }
 function showResults(){
   if(heard){
+    const gb=guideBox("heard",0);
+    if(gb){
+      panel(`<h2>Listen-through finished</h2>${gb.html}<p class="cnote">Runs where the app plays for you are not counted in your progress.</p><div class="btns"><button class="btn" id="rClose">Close</button></div>`);
+      $("rClose").onclick=closePanel;gb.bind();return;
+    }
     panel(`<h2>Listen-through finished</h2><p>The app played the drums for you, so this run is <b>not counted</b> in your progress, accuracy or practice time.</p><p>When you have heard how it goes, switch off "Play drums for me" and play it yourself.</p><div class="btns"><button class="btn main" id="hYou">Now I play it</button><button class="btn" id="hAgain">Listen again</button><button class="btn" id="rClose">Close</button></div>`);
     $("rClose").onclick=closePanel;
     $("hAgain").onclick=()=>{closePanel();reset();play()};
@@ -659,6 +725,11 @@ function showResults(){
   }
   if(practice){
     if(jc){
+      const gb=guideBox("practice",0);
+      if(gb){
+        panel(`<h2>Practice run complete</h2><p>You played all ${jc} notes at your own pace. The order of the hits is in your hands now.</p>${gb.html}<div class="btns"><button class="btn" id="rClose">Close</button></div>`);
+        $("rClose").onclick=closePanel;gb.bind();return;
+      }
       panel(`<h2>Practice run complete</h2><p>You played all ${jc} notes at your own pace. Nicely done.</p><p>When it feels comfortable, switch off "wait for me" and play it to the click. That is the real test.</p><div class="btns"><button class="btn main" id="pReal">Try it at full speed</button><button class="btn" id="pAgain">Practice again</button><button class="btn" id="rClose">Close</button></div>`);
       $("rClose").onclick=closePanel;
       $("pAgain").onclick=()=>{closePanel();reset();play()};
@@ -674,22 +745,73 @@ function showResults(){
   const trend=Math.abs(avg)<8?"Steady – you stay right on the beat.":(avg<0?`You tend to rush by about ${-avg} ms.`:`You tend to drag by about ${avg} ms.`);
   let worst=-1,wv=0;
   ls.forEach((q,i)=>{const tot=q.n+q.m;if(tot<3)return;const v=q.m/tot+(q.a/Math.max(q.n,1))/400;if(v>wv){wv=v;worst=i}});
-  const rows=ls.map((q,i)=>q.n+q.m?`<tr><td><i style="background:${L[i].c}"></i>${L[i].n}</td><td>${q.n}</td><td>${q.m}</td><td>${q.n?(q.s>0?"+":"")+Math.round(q.s/q.n)+" ms":"–"}</td></tr>`:"").join("");
+  const ev=evenInfo(),evm={};if(ev)ev.forEach(e=>evm[e.l]=e.sd);
+  const rows=ls.map((q,i)=>q.n+q.m?`<tr><td><i style="background:${L[i].c}"></i>${L[i].n}</td><td>${q.n}</td><td>${q.m}</td><td>${q.n?(q.s>0?"+":"")+Math.round(q.s/q.n)+" ms":"–"}</td>${ev?`<td>${evm[i]!=null?"±"+evm[i]:"–"}</td>`:""}</tr>`:"").join("");
   saveRun(acc,misses);
+  const gb=guideBox("run",acc);
   const st=acc>=95?5:acc>=90?4:acc>=80?3:acc>=65?2:1;
   let extra="";
-  const nxtL=(!wq&&!perf&&!free&&songId.startsWith("lesson:")&&acc>=80)?nextLesson():null;
-  if($("trn").checked&&acc>=90&&Math.round(rate*100)<120){const v=Math.round(rate*100)+5;bump(v);extra=`<p><b>Clean run – tempo raised to ${v}%.</b></p>`}
-  panel(`<h2>${perf?"Performance complete":"Run complete"}</h2>${perf?`<div class="stars">${"★".repeat(st)}${"☆".repeat(5-st)}</div>`:""}<div class="big">${acc}%</div><p>Average timing error ${err} ms. ${trend}</p>${histSvg()}${worst>=0?`<p>Needs the most work: <b>${L[worst].n}</b>.</p>`:""}${extra}<ul>${c.tips.map(t=>`<li>${t}</li>`).join("")}</ul><table><tr><th>Pad</th><th>Hit</th><th>Missed</th><th>Avg</th></tr>${rows}</table><div class="btns">${c.hardBar?`<button class="btn" id="rLoop">Loop bar ${c.hardBar}</button>`:""}${wq&&wi<wq.length-1?`<button class="btn main" id="rNext">Next lesson</button>`:""}${nxtL?`<button class="btn main" id="rNL">Next: ${esc(nxtL.n)}</button>`:""}<button class="btn${(wq&&wi<wq.length-1)||nxtL?"":" main"}" id="rAgain">Play again</button><button class="btn" id="rClose">Close</button></div>`);
+  const nxtL=(!gb&&!wq&&!perf&&!free&&songId.startsWith("lesson:")&&acc>=80)?nextLesson():null;
+  if(!gb&&$("trn").checked&&acc>=90&&Math.round(rate*100)<120){const v=Math.round(rate*100)+5;bump(v);extra=`<p><b>Clean run – tempo raised to ${v}%.</b></p>`}
+  const nextW=wq&&wi<wq.length-1,mainBtn=nextW||nxtL||gb;
+  panel(`<h2>${perf?"Performance complete":"Run complete"}</h2>${perf?`<div class="stars">${"★".repeat(st)}${"☆".repeat(5-st)}</div>`:""}<div class="big">${acc}%</div>${gb?gb.html:""}<p>Average timing error ${err} ms. ${trend}</p>${histSvg()}${worst>=0&&wv>=.08?`<p>Needs the most work: <b>${L[worst].n}</b>.</p>`:""}${extra}<ul>${c.tips.map(t=>`<li>${t}</li>`).join("")}</ul>${evenHtml(ev)}${silentHtml()}${barMap()}<table><tr><th>Pad</th><th>Hit</th><th>Missed</th><th>Avg</th>${ev?"<th>Volume</th>":""}</tr>${rows}</table><div class="btns">${c.hardBar?`<button class="btn" id="rLoop">Loop bar ${c.hardBar}</button>`:""}${nextW?`<button class="btn main" id="rNext">Next lesson</button>`:""}${nxtL?`<button class="btn main" id="rNL">Next: ${esc(nxtL.n)}</button>`:""}<button class="btn${mainBtn?"":" main"}" id="rAgain">Play again</button><button class="btn" id="rClose">Close</button></div>`);
   $("rClose").onclick=closePanel;
   $("rAgain").onclick=()=>{closePanel();reset();play()};
-  if(nxtL)$("rNL").onclick=()=>{closePanel();openLesson(nxtL)};
-  if(wq&&wi<wq.length-1)$("rNext").onclick=()=>{wi++;closePanel();openLesson(wq[wi],2);play()};
-  if(c.hardBar)$("rLoop").onclick=()=>{
-    loopA=barStartT(c.hardBar-1);loopB=barStartT(c.hardBar);loopOn=true;updLoop();
-    closePanel();reset();bump(Math.max(40,Math.round(rate*100)-15));seekTo(loopA-lead(),loopA);gapEnd=loopA;play();
-  };
+  if(gb)gb.bind();
+  if(nxtL)$("rNL").onclick=()=>{closePanel();showCoach(nxtL)};
+  if(nextW)$("rNext").onclick=()=>{wi++;closePanel();openLesson(wq[wi],2);play()};
+  if(c.hardBar)$("rLoop").onclick=()=>loopBar(c.hardBar-1);
+  document.querySelectorAll("#resCard [data-bar]").forEach(b=>b.onclick=()=>loopBar(+b.dataset.bar));
   $("title").textContent=songName+bestText();
+}
+function loopBar(k){
+  const A=barStartT(k),B=barStartT(k+1);if(!(B>A+.2))return;
+  const v=Math.max(40,Math.round(rate*100)-15);
+  loopA=A;loopB=B;loopOn=true;updLoop();
+  closePanel();reset();bump(v);seekTo(loopA-lead(),loopA);gapEnd=loopA;play();
+  say(`Looping bar ${k+1} at ${v}%. When it feels easy, raise the tempo. Tools, Clear stops the loop.`);
+}
+/* bar-by-bar map of the last run (v1.12) */
+function barMap(){
+  const m=new Map();
+  for(const n of notes){
+    if(n.r!=="hit"&&n.r!=="miss")continue;
+    const b=barIdx(n.t);let e=m.get(b);if(!e)m.set(b,e={c:0,s:0,t:n.t});
+    e.c++;if(n.r==="hit")e.s+=n.g||0;
+  }
+  if(m.size<2)return"";
+  let anySil=false;
+  const tiles=[...m.entries()].sort((a,b)=>a[0]-b[0]).map(([b,e])=>{
+    const a=Math.round(e.s/e.c*100),cl=a>=90?"g":a>=70?"a":"r",sil=silOK&&silentAt(e.t);if(sil)anySil=true;
+    return `<button class="${cl}${sil?" sil":""}" data-bar="${b}" title="Bar ${b+1}: ${a}%" aria-label="Bar ${b+1}, ${a} percent${sil?", silent bar":""}">${b+1}</button>`;
+  }).join("");
+  return `<h3>Bar by bar</h3><div class="bmap">${tiles}</div><p class="cnote">Green 90% or better, amber 70 to 89%, red below 70%.${anySil?" Dashed bars were silent.":""} Tap a bar to loop it more slowly.</p>`;
+}
+/* how the timing held up without the click (v1.12) */
+function silentHtml(){
+  if(silS.n+silS.m<3||!clkS.n)return"";
+  const ce=Math.round(clkS.a/clkS.n),cd=Math.round(clkS.s/clkS.n),se=silS.n?Math.round(silS.a/silS.n):0,sd=silS.n?Math.round(silS.s/silS.n):0;
+  const lean=d=>Math.abs(d)<8?"on time":d<0?`${-d} ms early`:`${d} ms late`;
+  let v;
+  if(silS.n<(silS.n+silS.m)/2)v="You lost the thread in the silent bars and missed most of the notes. Keep playing through the silence, even quietly, and count out loud: “1 and 2 and”.";
+  else if(se<=ce+12&&Math.abs(sd-cd)<15)v="Your inner clock is solid: you kept time almost as well without the click as with it.";
+  else if(sd-cd<=-15)v=`Without the click you rushed by about ${cd-sd} ms. Your inner clock speeds up, like walking faster when nobody sets the pace. Count out loud through the silent bars and keep your strokes relaxed.`;
+  else if(sd-cd>=15)v=`Without the click you dragged by about ${sd-cd} ms, so the groove sagged a little. Lean gently into each beat and count out loud.`;
+  else v=`Your timing spread out without the click (${se} ms against ${ce} ms with it). This gap shrinks with practice. Start with "4 on, 4 off" and work towards "every other bar".`;
+  return `<h3>Silent bars</h3><table><tr><th></th><th>Avg error</th><th>Leaning</th><th>Missed</th></tr><tr><td>With the click</td><td>${ce} ms</td><td>${lean(cd)}</td><td>${clkS.m}</td></tr><tr><td>Silent</td><td>${silS.n?se+" ms":"–"}</td><td>${silS.n?lean(sd):"–"}</td><td>${silS.m}</td></tr></table><p>${v}</p>`;
+}
+/* stroke evenness from the kit's hit strength (velocity), lessons only (v1.12) */
+function evenInfo(){
+  if(!songId.startsWith("lesson:"))return null;
+  const out=[];
+  vs.forEach((a,i)=>{if(a.length<6)return;const m=a.reduce((x,y)=>x+y,0)/a.length;out.push({l:i,sd:Math.round(Math.sqrt(a.reduce((x,y)=>x+(y-m)*(y-m),0)/a.length))})});
+  return out.length?out:null;
+}
+function evenHtml(ev){
+  if(!ev)return"";
+  const w=[...ev].sort((a,b)=>b.sd-a.sd)[0];
+  if(w.sd<=10)return`<p><b>Stroke evenness:</b> your strokes are nice and even (within ±${w.sd} on the kit's 0 to 127 scale).</p>`;
+  return`<p><b>Stroke evenness:</b> your ${L[w.l].n} strokes vary in volume by about ±${w.sd} (on the kit's 0 to 127 scale). Aim for ±10 or less: lift the stick to the same height every time, like a pendulum that always swings the same distance.</p>`;
 }
 function showProgress(){
   if(!songId){say("Load a song or pick a lesson first.");return}
@@ -698,14 +820,14 @@ function showProgress(){
   const accNow=Math.max(0,...runs.filter(r=>r.tempo>=g.tempo).map(r=>r.acc));
   const tempoNow=Math.max(0,...runs.filter(r=>r.acc>=g.acc).map(r=>r.tempo));
   const pct=Math.round(Math.min(1,accNow/g.acc)*50+Math.min(1,tempoNow/g.tempo)*50);
-  const rows=runs.slice(-12).reverse().map(r=>`<tr><td>${new Date(r.d).toLocaleDateString(undefined,{day:"numeric",month:"short"})}${r.perf?" ★":""}</td><td>${r.tempo}%</td><td>${r.acc}%</td><td>${r.miss}</td></tr>`).join("");
+  const rows=runs.slice(-12).reverse().map(r=>`<tr><td>${new Date(r.d).toLocaleDateString(undefined,{day:"numeric",month:"short"})}${r.perf?" ★":""}${r.sil?" (silent bars)":""}</td><td>${r.tempo}%</td><td>${r.acc}%</td><td>${r.miss}</td></tr>`).join("");
   const best=runs.length?Math.max(...runs.map(r=>r.acc)):0;
   panel(`<h2>${esc(songName)}</h2><p>${runs.length?`${runs.length} runs · best ${best}%`:"No finished runs yet."}</p>
   <p><b>Goal:</b> <input id="gA" type="number" min="50" max="100" value="${g.acc}" style="width:4em"> % accuracy at <input id="gT" type="number" min="40" max="120" value="${g.tempo}" style="width:4em"> % tempo <button class="btn" id="gS">Save</button></p>
   <div style="height:10px;border-radius:6px;background:var(--line);overflow:hidden"><i style="display:block;width:${pct}%;height:100%;border-radius:0;margin:0;background:var(--ink)"></i></div>
   <p>${pct>=100?"Goal reached! Time to set a harder one.":"Goal progress: "+pct+"%"}</p>
-  ${rows?`<table><tr><th>Date</th><th>Tempo</th><th>Accuracy</th><th>Missed</th></tr>${rows}</table>`:""}<div class="btns"><button class="btn" id="rClose">Close</button></div>`);
-  $("rClose").onclick=closePanel;
+  ${rows?`<table><tr><th>Date</th><th>Tempo</th><th>Accuracy</th><th>Missed</th></tr>${rows}</table>`:""}<div class="btns"><button class="btn" id="oAll">My progress</button><button class="btn" id="rClose">Close</button></div>`);
+  $("rClose").onclick=closePanel;$("oAll").onclick=showOverview;
   $("gS").onclick=()=>{goals[songId]={acc:Math.min(100,Math.max(50,+$("gA").value||90)),tempo:Math.min(120,Math.max(40,+$("gT").value||100))};jset("sw_goals",goals);showProgress()};
 }
 function showProgressOld(){
@@ -718,6 +840,57 @@ function showProgressOld(){
   const best=Math.max(...h.runs.map(r=>r.acc)),fast=Math.max(0,...h.runs.filter(r=>r.acc>=90).map(r=>r.tempo));
   panel(`<h2>${esc(h.name)}</h2><p>${h.runs.length} runs · best ${best}%${fast?` · cleanest tempo ${fast}%`:""}</p><table><tr><th>Date</th><th>Tempo</th><th>Accuracy</th><th>Missed</th></tr>${rows}</table><div class="btns"><button class="btn" id="rClose">Close</button></div>`);
   $("rClose").onclick=closePanel;
+}
+/* ---------- my progress: overview across everything (v1.12) ---------- */
+function calSvg(t){
+  const now=new Date(),dow=(now.getDay()+6)%7,cs=14,gp=3,lw=16,W=lw+12*(cs+gp),H=7*(cs+gp)+14;
+  let r=`<svg class="cal" viewBox="0 0 ${W} ${H}" role="img" aria-label="Practice minutes per day for the last 12 weeks">`;
+  ["M","","W","","F","",""].forEach((d,i)=>{if(d)r+=`<text x="0" y="${i*(cs+gp)+cs-3}" font-size="10" style="fill:var(--mute)">${d}</text>`});
+  for(let c=0;c<12;c++)for(let d=0;d<7;d++){
+    const back=(11-c)*7+dow-d;if(back<0)continue;
+    const dt=new Date(now.getTime()-back*864e5),k=dayKey(dt.getTime()),m=(t[k]||0)/60;
+    const op=m<1?0:m<10?.3:m<20?.5:m<40?.75:1;
+    r+=`<rect x="${lw+c*(cs+gp)}" y="${d*(cs+gp)}" width="${cs}" height="${cs}" rx="3" style="fill:${op?"var(--ink)":"var(--line)"};opacity:${op||1}"${back===0?' stroke="#d64550" stroke-width="2"':""}><title>${dt.toLocaleDateString(undefined,{day:"numeric",month:"short"})}: ${Math.round(m)} min</title></rect>`;
+  }
+  r+=`<text x="${lw}" y="${H-2}" font-size="10" style="fill:var(--mute)">12 weeks ago</text><text x="${W}" y="${H-2}" font-size="10" text-anchor="end" style="fill:var(--mute)">today</text></svg>`;
+  return r;
+}
+function showOverview(){
+  const t=jget("sw_time",{}),hist=jget("sw_hist",{}),day=i=>t[dayKey(Date.now()-i*864e5)]||0;
+  let wk=0,lw=0,tot=0;for(let i=0;i<7;i++){wk+=day(i);lw+=day(i+7)}
+  for(const k in t)tot+=t[k];
+  let i=day(0)>=60?0:1,streak=0;while(i<400&&day(i)>=60){streak++;i++}
+  let best=0,run=0,prev=null;
+  Object.keys(t).filter(k=>t[k]>=60).sort().forEach(k=>{const d=new Date(k+"T12:00:00").getTime();run=prev!=null&&Math.round((d-prev)/864e5)===1?run+1:1;prev=d;if(run>best)best=run});
+  const mins=x=>Math.round(x/60),hrs=x=>x>=3600?(x/3600).toFixed(1)+" h":mins(x)+" min";
+  const kpi=`<div class="kpis"><div><b>${mins(wk)}</b><span>min this week${lw?` (last week ${mins(lw)})`:""}</span></div><div><b>${streak}</b><span>day streak · best ${best}</span></div><div><b>${hrs(tot)}</b><span>practised in all</span></div></div>`;
+  const bar=(lab,a,arr)=>{const m=arr.filter(x=>mastered(x.id)).length;return`<div class="mrow"><b>${lab}</b><span>${m} of ${arr.length} mastered</span></div><div class="mbar"><i style="width:${Math.round(m/arr.length*100)}%"></i></div>`};
+  const mast=LV.map((n,k)=>bar(n,k,LES.filter(x=>x.lv===k))).join("")+bar("Rudiments",0,RUD);
+  const all=[...LES,...RUD],now=Date.now();
+  const near=all.filter(x=>!mastered(x.id)).map(x=>{const r=lessonRuns(x.id);if(!r.length)return null;let b=0,why="";r.forEach(q=>{const v=Math.min(q.acc/85,1)*.5+Math.min(q.tempo/90,1)*.5;if(v>b){b=v;why=`best ${q.acc}% at ${q.tempo}% tempo`}});return{x,b,why}}).filter(Boolean).sort((a,b)=>b.b-a.b).slice(0,3);
+  const due=all.filter(x=>mastered(x.id)).map(x=>{const r=lessonRuns(x.id),d=Math.floor((now-Math.max(...r.map(q=>q.d)))/864e5);return{x,d}}).filter(o=>o.d>=14).sort((a,b)=>b.d-a.d).slice(0,3);
+  const lrow=(o,txt)=>`<div class="srow"><button class="btn" data-id="${o.x.id}">${esc(o.x.n)}</button><span>${txt}</span></div>`;
+  const songs=Object.entries(hist).filter(([k,v])=>!k.startsWith("lesson:")&&k!=="free"&&v.runs&&v.runs.length).map(([k,v])=>({v,last:Math.max(...v.runs.map(r=>r.d))})).sort((a,b)=>b.last-a.last).slice(0,4);
+  const srows=songs.map(o=>{const r=o.v.runs,b=Math.max(...r.map(q=>q.acc)),ch=r[r.length-1].acc-r[0].acc;return`<tr><td>${esc(o.v.name||"Song")}</td><td>${r.length}</td><td>${b}%</td><td>${r.length>1?(ch>0?"↑ +":ch<0?"↓ ":"")+ch+"%":"–"}</td></tr>`}).join("");
+  const empty=!tot&&!Object.keys(hist).length;
+  panel(`<h2>My progress</h2>${empty?`<p>Nothing here yet. Finish a run of any lesson or song and your progress starts filling in.</p>`:""}${kpi}<h3>Practice calendar</h3>${calSvg(t)}<p class="cnote">Darker squares mean more minutes. Only time you play yourself counts.</p><h3>Lessons mastered</h3>${mast}${near.length?`<h3>Almost there</h3><p class="cnote">Your closest lessons to mastered (85% at 90% tempo).</p>${near.map(o=>lrow(o,o.why)).join("")}`:""}${due.length?`<h3>Due for a review</h3><p class="cnote">Mastered a while ago. A quick run keeps them in your hands, like revising before you forget.</p>${due.map(o=>lrow(o,o.d+" days ago")).join("")}`:""}${srows?`<h3>Recent songs</h3><table><tr><th>Song</th><th>Runs</th><th>Best</th><th>Change</th></tr>${srows}</table>`:""}<div class="btns">${songId&&songId!=="free"?`<button class="btn" id="oSong">This song</button>`:""}<button class="btn main" id="rClose">Close</button></div>`);
+  $("rClose").onclick=closePanel;
+  if($("oSong"))$("oSong").onclick=showProgress;
+  document.querySelectorAll("#resCard [data-id]").forEach(b=>b.onclick=()=>showCoach(findLes(b.dataset.id)));
+}
+/* silent-bar helpers (v1.12) */
+function barIdx(t){
+  if(barT){let lo=0,hi=Math.max(0,barT.length-2);while(lo<hi){const m=(lo+hi+1)>>1;if(barT[m]<=t+1e-6)lo=m;else hi=m-1}return lo}
+  let lo=0,hi=Math.max(0,beats.length-1);while(lo<hi){const m=(lo+hi+1)>>1;if(beats[m]<=t+1e-6)lo=m;else hi=m-1}return Math.floor(lo/tsNum);
+}
+function silPrep(){
+  silOK=!!silentMode&&!practice&&!free&&notes.length>0&&!$("hear").checked;
+  silBase=silOK&&loopOn&&loopA!=null&&loopB!=null?barIdx(loopA):0;
+}
+function silentAt(t){
+  if(!silOK||t<0)return false;
+  const k=[0,1,2,4][silentMode],b=barIdx(t)-silBase;
+  return b>=0&&Math.floor(b/k)%2===1;
 }
 let dbp=null;
 function db(){return dbp||(dbp=new Promise((res,rej)=>{const q=indexedDB.open("stickwork",1);q.onupgradeneeded=()=>q.result.createObjectStore("songs",{keyPath:"name"});q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}))}
@@ -786,15 +959,78 @@ const LES=[
 {id:"x7",lv:4,n:"Seven-eight groove",bpm:100,ts:7,r:2,rep:8,bars:[{H:"x.x.x.x.x.x.x.",K:"x.....x.x.....",S:"....x.....x..."}]},
 {id:"x5",lv:4,n:"Full-kit fill",bpm:80,rep:4,bars:[{...G8,...CR},G8,G8,{S:"xxxx............","1":"....xxxx........","2":"........xx......","3":"..........xx....","4":"............xx..",K:"..............xx"}]}
 ];
+/* rudiments (v1.12): st gives the sticking for each slot of the bar */
+const RUD=[
+{id:"r1",rud:1,lv:0,n:"Single strokes",bpm:70,rep:8,bars:[{S:"x.x.x.x.x.x.x.x."}],st:["R.L.R.L.R.L.R.L."]},
+{id:"r2",rud:1,lv:0,n:"Double strokes",bpm:70,rep:8,bars:[{S:"x.x.x.x.x.x.x.x."}],st:["R.R.L.L.R.R.L.L."]},
+{id:"r3",rud:1,lv:1,n:"Single paradiddle",bpm:60,rep:8,bars:[{S:"xxxxxxxxxxxxxxxx"}],st:["RLRRLRLLRLRRLRLL"]},
+{id:"r4",rud:1,lv:1,n:"Triplet singles",bpm:65,r:3,rep:8,bars:[{S:"xxxxxxxxxxxx"}],st:["RLRLRLRLRLRL"]},
+{id:"r5",rud:1,lv:2,n:"Paradiddle-diddle",bpm:60,r:3,rep:8,bars:[{S:"xxxxxxxxxxxx"}],st:["RLRRLLRLRRLL"]},
+{id:"r6",rud:1,lv:2,n:"Five-stroke roll",bpm:60,rep:8,bars:[{S:"xxxxx...xxxxx..."}],st:["RRLLR...LLRRL..."]},
+{id:"r7",rud:1,lv:2,n:"Double paradiddle",bpm:60,r:3,rep:8,bars:[{S:"xxxxxxxxxxxx"}],st:["RLRLRRLRLRLL"]},
+{id:"r8",rud:1,lv:3,n:"Paradiddle groove",bpm:70,rep:8,bars:[{H:"x.xx.x..x.xx.x..",S:".x..x.xx.x..x.xx",K:"x.......x......."}],st:["RLRRLRLLRLRRLRLL"]}
+];
+const findLes=id=>LES.find(x=>x.id===id)||RUD.find(x=>x.id===id);
+const lvName=x=>x.rud?"Rudiment":LV[x.lv];
+const lesPads=x=>[...new Set(x.bars.flatMap(b=>Object.keys(b)).map(k=>L[LK[k]].n))];
+/* what each lesson is, in everyday terms (v1.12) */
+const GUIDE={
+b1:"Think of the hi-hat as the ticking of a clock: every tick the same distance apart and the same loudness. Count “1 2 3 4” out loud while you play.",
+b2:"The kick is the song's footsteps. Here you step on 1 and 3, like a slow walk, while your hand keeps the clock ticking on every beat.",
+b3:"Kick on 1 and 3, snare on 2 and 4: “boom… tak… boom… tak”, like a heartbeat. The snare on 2 and 4 is the backbeat people clap along to.",
+b4:"The sentence most songs are built from. Your hand plays eighths (“1 and 2 and”) like steady rain on a roof, and kick and snare go “boom, tak” on top. Hand and foot on beat 1 should sound like one stroke.",
+b5:"Kick on every beat, the dance-floor heartbeat. A DJ's beat never wobbles, so keep every kick the same strength and spacing.",
+e1:"The extra kick on the “and” of 3 is a skip in your step. Say “boom, tak, boom-boom, tak” and feel it lean into beat 4.",
+e2:"The open hat is a sigh between closed ticks. Open it on the “and” of 4 and close it exactly on the next 1, like opening and shutting a door in one move.",
+e3:"The ride is the hi-hat's bigger, brighter cousin. Same job, more shimmer. Let it ring.",
+e4:"Cross-stick (rim) is the snare whispering instead of shouting: a woody click for quieter songs. The timing is the same as a normal backbeat.",
+e5:"A fill is a comma in the music. The groove pauses, the snare talks for two beats, then you land on the crash on 1 like a full stop. The landing matters more than the fill.",
+i1:"Sixteenths are four ticks per beat, “1 e and a”, like jogging instead of walking: lighter, smaller steps. Keep the hand relaxed and play from the wrist.",
+i2:"Funk lives in the gaps. The kick dances around the beat while the hat keeps a sixteenth-note conveyor belt running underneath.",
+i3:"A shuffle swings long-short, long-short, like a trotting horse or “hump-ty dump-ty”. Each beat splits into three and you play the first and last.",
+i4:"Alternate hands evenly, like walking: right, left, right, left. Both hands should sound like one: same height, same loudness.",
+i5:"The fill walks down the toms like going down a staircase, high to low. Keep walking at the same speed and land on the crash on 1.",
+i6:"Half-time feels like the song slowed to half speed while the hat keeps the original pace. The snare comes only on beat 3, like a slow-motion replay.",
+i7:"Three beats per bar: “ONE two three, ONE two three”, like a waltz. Kick on 1, snare on 2 and 3.",
+a1:"Syncopation means hitting where the listener doesn't expect, like a punchline that arrives a little early. Count every sixteenth out loud to place the off-beat kicks.",
+a2:"In a linear groove no two limbs ever play together, like a single line of dominoes falling one at a time. Hands and feet take turns.",
+a3:"Two quick kicks are a double step, “ba-dum”. Make the second one as strong as the first.",
+a4:"Five beats per bar. Count it as 3 + 2, “1 2 3, 1 2”: a limp, but a perfectly regular one.",
+a5:"Pairs of sixteenths down the toms, like a ball bouncing down the stairs, two bounces per step.",
+x1:"Speed comes from relaxing, not forcing. Let the stick bounce like dribbling a basketball: your hand just keeps it going.",
+x2:"Ride, kick and snare take turns very fast, like a sewing machine. Start slowly: a clean slow blast beat beats a messy fast one.",
+x3:"Every fourth sixteenth the hat opens, like breathing out on every step. Keep the closed notes short and tight.",
+x4:"Seven beats per bar. Count 4 + 3, a 4/4 bar followed by a short one.",
+e6:"Kick on every beat and the open hat on every “and”: the classic “oom-tss, oom-tss”. The hat closes on the beat as your kick lands.",
+e7:"In a one-drop, beat 1 drops out and kick and rim land together on beat 3. It feels like the floor vanishes on 1. Relax and lay back.",
+i8:"Hip-hop's head-nod: “boom… bap”. It should feel heavy and lazy, but for scoring, still aim for the line.",
+i9:"The rim plays a little rhythm melody (the clave) while the kick walks “dum… da-dum”. Gentle, like small waves.",
+i10:"Long-short swing on the ride, like a slow rocking chair.",
+a6:"Your left foot closes the hi-hat on 2 and 4, a quiet “chick” that doubles the snare, like tapping your foot to the music on the backbeat.",
+a7:"The kick goes “ga-lo-p, ga-lo-p” like a horse, three quick kicks per beat. Keep the snare backbeat steady over the top.",
+a8:"A slow, heavy shuffle with the snare only on beat 3: a big lazy swing, like a trot in slow motion.",
+x6:"Four limbs, four jobs: ride, kick, snare and hat foot, like four people rowing in time. Learn it limb by limb with Settings, Focus pads first.",
+x7:"Seven eighths, grouped 2 + 2 + 3: count “1 2, 1 2, 1 2 3”. The last group is the longer one, like a dancer's extra step.",
+x5:"Snare, then toms, then kick: a tour around the kit, like sweeping your hand down a piano from high to low. Land the crash on 1.",
+r1:"The foundation of everything: right, left, right, left, like walking. Both hands the same height and the same loudness.",
+r2:"Two strokes per hand, “R R L L”. Like a ball bouncing twice: the second stroke is a controlled bounce, not a new push.",
+r3:"Say the word while you play it: “pa-ra-did-dle”, R L R R, L R L L. The double at the end swaps which hand leads next time.",
+r4:"Three notes per beat: “1-trip-let, 2-trip-let”. Because three is odd, the leading hand swaps every beat.",
+r5:"R L R R L L: one single pair, then two doubles. It rolls like a wheel and is great for tom fills later.",
+r6:"R R L L R: two doubles, then a single that lands like a full stop. A short roll that ends on the other hand next time.",
+r7:"R L R L R R: two singles before the double. Count “1-trip-let, 2-trip-let”; the double falls on the last two notes.",
+r8:"Your paradiddle spread across the kit: right hand on the hat, left hand on the snare, kick on 1 and 3. The left-hand notes on 2 and 4 are the backbeat; the rest are quiet ghost notes. A rudiment turned into music."
+};
 
-function openLesson(les,mul=1){
+function openLesson(les,mul=1,keep){
+  if(!keep)guide=null;
   const ts=les.ts||4,r=les.r||4,spb=ts*r,bd0=60/les.bpm,sd=bd0/r,nbars=les.rep*mul*les.bars.length;
   const out=[],bk2=[],ROOT=[0,5,7,5];
   for(let b=0;b<nbars;b++){
     const m=les.bars[b%les.bars.length],t0=b*spb*sd,root=ROOT[b%4];
     for(const k in m){
       const s=(m[k]+".".repeat(spb)).slice(0,spb);
-      for(let i=0;i<spb;i++)if(s[i]==="x")out.push({t:t0+i*sd,l:LK[k]});
+      for(let i=0;i<spb;i++)if(s[i]==="x")out.push({t:t0+i*sd,l:LK[k],_s:i,_b:b});
     }
     const kk=m.K?(m.K+".".repeat(spb)).slice(0,spb):"",hits=[];
     for(let i=0;i<spb;i++)if(kk[i]==="x")hits.push(i);
@@ -807,12 +1043,14 @@ function openLesson(les,mul=1){
   notes=out;endT=out[out.length-1].t+1.5;
   beats=[];for(let k=0;k<=nbars*ts+2;k++)beats.push(k*bd0);
   back=bk2;tsNum=ts;bd=bd0;baseBpm=les.bpm;assignStick(out);
+  if(les.st)out.forEach(n=>{if(n.l===3||n.l===12)return;const h=les.st[n._b%les.st.length][n._s];if(h==="R"||h==="L"){n.h=h;n.hf=1}});
+  out.forEach(n=>{delete n._s;delete n._b});
   loopA=loopB=null;loopOn=false;updLoop();
   chordMarks=[];clearScoreState();srcTs={n:ts,d:4};free=false;songId="lesson:"+les.id;songName=les.n;
-  $("title").textContent=(wq?"("+(wi+1)+"/"+wq.length+") ":"")+les.n+" · "+LV[les.lv]+bestText();
+  $("title").textContent=(wq?"("+(wi+1)+"/"+wq.length+") ":"")+les.n+" · "+lvName(les)+bestText();
   $("empty").style.display="none";
   $("bkOn").checked=true;bump(100);reset();$("play").textContent="Play";
-  say(`${les.n} · ${LV[les.lv]} · ${les.bpm} BPM · you play: ${[...new Set(out.map(n=>L[n.l].n))].join(", ")}`);
+  say(`${les.n} · ${lvName(les)} · ${les.bpm} BPM · you play: ${[...new Set(out.map(n=>L[n.l].n))].join(", ")}`);
 }
 function bk(x,at){
   const d=x.d/rate,g=ac.createGain();g.connect(ac.destination);
@@ -832,13 +1070,78 @@ function myLevel(){
 }
 function showLessons(sel){
   const now=myLevel();if(sel==null)sel=now;
-  const chips=LV.map((n,i)=>`<button class="btn${i===sel?" main":""}" data-lv="${i}">${n}</button>`).join("");
+  const rud=sel==="r",list=rud?RUD:LES.filter(x=>x.lv===sel);
+  const chips=LV.map((n,i)=>`<button class="btn${i===sel?" main":""}" data-lv="${i}">${n}</button>`).join("")+`<button class="btn${rud?" main":""}" data-lv="r">Rudiments</button>`;
   const next=LES.find(x=>!mastered(x.id));
-  const rows=LES.filter(x=>x.lv===sel).map(x=>{const b=bestOf(x.id);return `<div class="srow"><button class="btn" data-id="${x.id}">${mastered(x.id)?"✓ ":""}${esc(x.n)}</button><span>${x.bpm} BPM${b!=null?" · "+b+"%":""}</span></div>`}).join("");
-  panel(`<h2>Practice lessons</h2><p>Your level: <b>${LV[now]}</b>. ${next?"Next up: "+esc(next.n)+".":"You have mastered every lesson. Nicely done."}</p><div class="chips">${chips}</div>${rows}<p style="color:var(--mute);font-size:13px">A lesson counts as mastered at 85% accuracy or better at 90% tempo or faster. Master about 60% of a level to move up to the next.</p><div class="btns"><button class="btn" id="rClose">Close</button></div>`);
+  const rows=list.map(x=>{const b=bestOf(x.id),gd=gget(x.id);return `<div class="srow"><button class="btn" data-id="${x.id}">${mastered(x.id)?"✓ ":""}${esc(x.n)}</button><span>${rud?LV[x.lv]+" · ":""}${x.bpm} BPM${b!=null?" · "+b+"%":gd>=0?" · "+(gd+1)+" of 5 steps":""}</span></div>`}).join("");
+  const intro=rud?`<p>Rudiments are the scales of drumming: short sticking patterns that build control in your hands. The R and L sticking is the whole point, so follow it even when another way feels easier. The kit cannot tell your hands apart, so that part is on you.</p>`:`<p>Your level: <b>${LV[now]}</b>. ${next?"Next up: "+esc(next.n)+".":"You have mastered every lesson. Nicely done."}</p>`;
+  panel(`<h2>Practice lessons</h2>${intro}<div class="chips">${chips}</div>${rows}<p style="color:var(--mute);font-size:13px">Tap a lesson for its coach card and step-by-step practice plan. A lesson counts as mastered at 85% accuracy or better at 90% tempo or faster.${rud?"":" Master about 60% of a level to move up to the next."}</p><div class="btns"><button class="btn" id="rClose">Close</button></div>`);
   $("rClose").onclick=closePanel;
-  document.querySelectorAll("#resCard [data-lv]").forEach(b=>b.onclick=()=>showLessons(+b.dataset.lv));
-  document.querySelectorAll("#resCard [data-id]").forEach(b=>b.onclick=()=>{wq=null;closePanel();openLesson(LES.find(x=>x.id===b.dataset.id))});
+  document.querySelectorAll("#resCard [data-lv]").forEach(b=>b.onclick=()=>showLessons(b.dataset.lv==="r"?"r":+b.dataset.lv));
+  document.querySelectorAll("#resCard [data-id]").forEach(b=>b.onclick=()=>showCoach(findLes(b.dataset.id)));
+}
+/* ---------- coach me: guided practice ladder (v1.12) ---------- */
+let guide=null;
+const STEPS=[
+{n:"Listen",d:"The app plays it once. Watch which pads light up and count along out loud."},
+{n:"Learn it",d:"Wait for me: the song stops at each note until you hit it, so you learn the order of the hits with no time pressure."},
+{n:"Slow, 70%",d:"Play it to the click at 70% speed. Pass with 85% accuracy.",tp:70},
+{n:"Steady, 85%",d:"A little faster. Pass with 85% accuracy.",tp:85},
+{n:"Full speed",d:"100% tempo. Pass with 85% and the lesson is mastered.",tp:100}];
+const PASS=85;
+const gget=id=>{const v=jget("sw_guide",{})[id];return typeof v==="number"?v:-1};
+const gset=(id,k)=>{const g=jget("sw_guide",{});if(!(g[id]>=k)){g[id]=k;jset("sw_guide",g)}};
+const guideOn=()=>!!guide&&songId==="lesson:"+guide.les.id;
+function showCoach(les){
+  if(!les)return;
+  const done=gget(les.id),m=mastered(les.id),nk=Math.min(done+1,STEPS.length-1),tip=GUIDE[les.id];
+  const lad=STEPS.map((x,i)=>`<li class="${i<=done?"done":i===nk&&!m?"now":""}"><button class="lsb" data-step="${i}"><span class="dot">${i<=done?"✓":i+1}</span><span><b>${x.n}</b><small>${x.d}</small></span></button></li>`).join("");
+  panel(`<h2>${esc(les.n)}</h2><p style="color:var(--mute);margin:0">${lvName(les)} · ${les.bpm} BPM · you play: ${lesPads(les).join(", ")}</p>${tip?`<div class="tip">${tip}</div>`:""}<h3>Coach me</h3><p class="cnote">Learn it the way you learn to drive: ride along first, then drive slowly in an empty car park, then on quiet roads, then in real traffic. The next step starts when you pass this one. Tap any step to jump to it.</p><ul class="ladder">${lad}</ul><div class="btns">${m?`<button class="btn main" id="cFree">Play it</button><button class="btn" id="cGo">Coach me from step 1</button>`:`<button class="btn main" id="cGo">${done<0?"Start: Listen":"Continue: "+STEPS[nk].n}</button><button class="btn" id="cFree">Practise freely</button>`}<button class="btn" id="cBack">All lessons</button></div>`);
+  $("cGo").onclick=()=>{closePanel();guideStep(les,m?0:nk)};
+  $("cFree").onclick=()=>{wq=null;closePanel();openLesson(les)};
+  $("cBack").onclick=()=>showLessons(les.rud?"r":les.lv);
+  document.querySelectorAll("#resCard [data-step]").forEach(b=>b.onclick=()=>{closePanel();guideStep(les,+b.dataset.step)});
+}
+function guideStep(les,k){
+  wq=null;if(perf)setPerf(false);
+  openLesson(les,1,true);guide={les,step:k,fails:0};
+  const x=STEPS[k];
+  $("hear").checked=k===0;practice=k===1;$("prac").checked=practice;$("trn").checked=false;
+  bump(x.tp||100);reset();
+  $("title").textContent=`Step ${k+1}/5 · ${x.n} · ${les.n}`;
+  play();
+  say(k===0?"Step 1: just listen and watch. Count along out loud.":k===1?"Step 2: hit each note when it reaches the line. The song waits for you.":`Step ${k+1}: play to the click at ${x.tp}%. Aim for ${PASS}%.`);
+}
+function guideBox(kind,acc){
+  if(!guideOn())return null;
+  const g=guide,k=g.step,x=STEPS[k],les=g.les,last=k===STEPS.length-1;
+  let ok;
+  if(kind==="heard")ok=k===0;
+  else if(kind==="practice")ok=k===1;
+  else ok=k>=2&&acc>=PASS&&Math.round(rate*100)>=x.tp-1;
+  if(kind!=="run"&&!ok)return null;
+  if(kind==="run"&&k<2)return null;
+  let h,b,nl=null;
+  if(ok){gset(les.id,k);g.fails=0}else g.fails++;
+  if(ok&&last){
+    nl=nextLesson();guide=null;
+    h=`<h3>Step 5 of 5 passed: lesson mastered ✓</h3><p>Full speed at ${acc}%. Come back to it in a week or two so it stays in your hands. My progress shows when it is due.</p>`;
+    b=nl?`<button class="btn main" id="gNL">Next: ${esc(nl.n)}</button>`:"";
+  }else if(ok){
+    const nx=STEPS[k+1];
+    h=`<h3>Step ${k+1} of 5 done ✓</h3><p>Next: <b>${nx.n}</b>. ${nx.d}</p>`;
+    b=`<button class="btn main" id="gNext">Next step: ${nx.n}</button><button class="btn" id="gSame">Repeat this step</button>`;
+  }else{
+    h=`<h3>Step ${k+1} of 5: not yet</h3><p>To pass you need ${PASS}% at ${x.tp}% tempo, and you got ${acc}%${Math.round(rate*100)<x.tp-1?` at ${Math.round(rate*100)}%`:""}. ${g.fails>=2?"Two tries in a row: go back a step. Slower practice is faster progress, like learning a phone number in small chunks.":"Have another go. Each try makes the next one easier."}</p>`;
+    b=`<button class="btn main" id="gSame">Try again</button><button class="btn" id="gBack">Back a step</button>`;
+  }
+  return {html:`<div class="gbox">${h}${b?`<div class="btns">${b}</div>`:""}</div>`,bind:()=>{
+    const on=(id,f)=>{const e=$(id);if(e)e.onclick=f};
+    on("gNext",()=>{closePanel();guideStep(les,k+1)});
+    on("gSame",()=>{closePanel();guideStep(les,k)});
+    on("gBack",()=>{closePanel();guideStep(les,Math.max(0,k-1))});
+    on("gNL",()=>{if(nl)showCoach(nl)});
+  }};
 }
 function coach(acc,avg){
   const tips=[];let hardBar=0;
@@ -913,7 +1216,8 @@ function startCalib(){
 
 /* ---------- help, welcome, tools ---------- */
 function nextLesson(){
-  const o=[...LES].sort((a,b)=>a.lv-b.lv||LES.indexOf(a)-LES.indexOf(b));
+  const arr=RUD.some(x=>"lesson:"+x.id===songId)?RUD:LES;
+  const o=[...arr].sort((a,b)=>a.lv-b.lv||arr.indexOf(a)-arr.indexOf(b));
   const i=o.findIndex(x=>"lesson:"+x.id===songId);
   return o.slice(i+1).find(x=>!mastered(x.id))||o.find(x=>!mastered(x.id))||null;
 }
@@ -930,6 +1234,14 @@ function showHelp(){
   <p>Change how strict this is under Settings, Timing.</p>
   <h3>Levels</h3>
   <p>Master about 60% of the lessons in a level to move up. A lesson is mastered at 85% accuracy or better at 90% tempo or faster. Slow the tempo down while you learn.</p>
+  <h3>Coach me</h3>
+  <p>Tap a lesson to open its coach card: what the groove is, in everyday terms, and five steps to learn it: listen, learn it with wait-for-me, then 70%, 85% and full speed. Each step starts when you pass the one before (85% accuracy).</p>
+  <h3>Rudiments</h3>
+  <p>Under Lessons, Rudiments: short sticking patterns such as paradiddles and double strokes. Follow the R and L letters. The Daily workout starts with one to warm up your hands.</p>
+  <h3>Silent bars</h3>
+  <p>Tools, Silent bars makes the click, backing and app-played drums drop out for some bars while you keep playing. The results show whether you rushed or dragged without the click. Start with "4 on, 4 off".</p>
+  <h3>After a run</h3>
+  <p>The results show every bar coloured by how you did (tap one to loop it more slowly). On lessons played on a kit, they also show how even your strokes are. Progress shows a practice calendar, what you have mastered, what is almost there and what is due for a review.</p>
   <h3>Connecting an e-drum kit</h3>
   <ol><li>Use a USB cable (a USB-C adapter on a tablet).</li><li>Open Stickwork in Chrome and tap <b>Connect drum kit</b>. Allow MIDI access.</li><li>Hit a pad. Its lane should light up.</li><li>Open Settings and run <b>Calibrate hits</b> once.</li></ol>
   <p>If a pad does nothing, the message line shows its note number. Unplug and re-plug the cable, then try again.</p>
@@ -1002,19 +1314,20 @@ function showFree(){
 }
 function workoutPlan(){
   const lv=myLevel(),pick=(l,k)=>LES.filter(x=>x.lv===l).sort((a,b)=>(bestOf(a.id)??-1)-(bestOf(b.id)??-1))[k];
-  const q=[LES.filter(x=>x.lv===Math.max(0,lv-1))[0],pick(lv,0),pick(lv,1),pick(lv,2)];
+  const rw=RUD.filter(x=>x.lv<=lv).sort((a,b)=>(bestOf(a.id)??-1)-(bestOf(b.id)??-1)||a.lv-b.lv)[0];
+  const q=[rw,LES.filter(x=>x.lv===Math.max(0,lv-1))[0],pick(lv,0),pick(lv,1),pick(lv,2)];
   if(lv<LV.length-1)q.push(pick(lv+1,0));
   return [...new Set(q.filter(Boolean))];
 }
 function showWorkout(){
   const plan=workoutPlan(),mins=Math.round(plan.reduce((a,x)=>a+(x.rep*2*x.bars.length*(x.ts||4)*60/x.bpm)/60,0));
-  panel(`<h2>Daily workout</h2><p>${plan.length} lessons picked for your level (<b>${LV[myLevel()]}</b>), about ${mins} minutes. It starts with an easier warm-up and ends with a stretch.</p>${plan.map((x,i)=>`<div class="srow"><span style="color:var(--ink)">${i+1}. ${esc(x.n)}</span><span>${LV[x.lv]}</span></div>`).join("")}<div class="btns"><button class="btn main" id="wGo">Start workout</button><button class="btn" id="rClose">Close</button></div>`);
+  panel(`<h2>Daily workout</h2><p>${plan.length} lessons picked for your level (<b>${LV[myLevel()]}</b>), about ${mins} minutes. It starts with a rudiment to warm up your hands, then an easier groove, and ends with a stretch.</p>${plan.map((x,i)=>`<div class="srow"><span style="color:var(--ink)">${i+1}. ${esc(x.n)}</span><span>${lvName(x)}</span></div>`).join("")}<div class="btns"><button class="btn main" id="wGo">Start workout</button><button class="btn" id="rClose">Close</button></div>`);
   $("rClose").onclick=closePanel;
   $("wGo").onclick=()=>{wq=plan;wi=0;closePanel();openLesson(wq[0],2);play()};
 }
 function exportData(){
   const o={v:1};
-  ["sw_hist","sw_time","sw_goals","sw_lat","sw_aud","sw_win","sw_cnt","sw_staff","sw_stick","sw_tools","sw_seen","sw_charts","sw_chartlast","sw_scores"].forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)o[k]=v}catch(e){}});
+  ["sw_hist","sw_time","sw_goals","sw_lat","sw_aud","sw_win","sw_cnt","sw_staff","sw_stick","sw_tools","sw_seen","sw_charts","sw_chartlast","sw_scores","sw_guide","sw_silent"].forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)o[k]=v}catch(e){}});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([JSON.stringify(o)],{type:"application/json"}));
   a.download="stickwork-progress-"+dayKey(Date.now())+".json";
@@ -1023,7 +1336,7 @@ function exportData(){
 async function importData(f){
   try{
     const o=JSON.parse(await f.text());
-    const ok=["sw_hist","sw_time","sw_goals","sw_lat","sw_aud","sw_win","sw_cnt","sw_staff","sw_stick","sw_tools","sw_seen","sw_charts","sw_chartlast","sw_scores"];
+    const ok=["sw_hist","sw_time","sw_goals","sw_lat","sw_aud","sw_win","sw_cnt","sw_staff","sw_stick","sw_tools","sw_seen","sw_charts","sw_chartlast","sw_scores","sw_guide","sw_silent"];
     if(!o||o.v!==1)throw new Error("not a backup");
     ok.forEach(k=>{if(typeof o[k]==="string")localStorage.setItem(k,o[k])});
     showStats();say("Progress restored. Reload the app to apply all settings.");
@@ -1134,6 +1447,7 @@ function assignStick(out){
   });
 }
 const NEWS=[
+{v:"1.12.0",items:["Coach me: tap a lesson for a coach card that explains the groove in everyday terms and walks you through five steps: listen, learn it with wait-for-me, then 70%, 85% and full speed. The next step starts when you pass the one before.","Rudiments: eight sticking patterns (singles, doubles, paradiddles, triplets, five-stroke roll and a paradiddle groove) under Lessons, Rudiments. The Daily workout now starts with one.","Silent bars (Tools): the click and backing drop out for some bars while you keep time yourself. Results show whether you rushed or dragged without the click.","Results now show every bar coloured by how you did. Tap a bar to loop it more slowly. On lessons played on a kit, results also show how even your strokes are.","Progress now opens My progress: a practice calendar, lessons mastered per level, lessons that are almost there, and mastered ones due for a review."]},
 {v:"1.11.1",items:["Single letters are always chords, in capitals or small letters: g or G is the G chord, am is A minor, c/g is C/G.","Sargam needs the full name: Sa, Re, Ga, Ma, Pa, Dha, Ni (any case). Short forms like S, M or G are not read as sargam."]},
 {v:"1.11.0",items:["From chords now reads sargam: type | Sa | Re | Ga | Pa | instead of | C | D | E | G |. Devanagari works too (सा रे ग म प ध नि).","Komal notes: Re(k) or Reb. Tivra Ma: Ma' or Ma#. Minor, 7th and slash chords work the same way as letter chords: Rem, Pa7, Sa/Pa.","New setting, Sa is: choose the pitch of Sa (C by default). Chord names show both, for example Re (D)."]},
 {v:"1.10.0",items:["New Write & edit button: write your own drum notation bar by bar on a step grid, with real notation drawn above it (notes, stems, beams, rests and triplets).","Each bar has its own time signature (1 to 15 beats over 2, 4, 8 or 16), grid (8ths, 16ths, 32nds, triplets) and optional tempo change. Insert, duplicate, copy, paste, clear and delete bars.","Change any note's length: Shift later notes moves the rest of the bar along, like a notation program. Move notes earlier or later, or swap them to another pad.","Edit anything Stickwork turned into notation: lessons, chord charts, MIDI, MuseScore and Guitar Pro files. Load it, tap Write & edit, then Edit. Bar numbers, loops and the click follow your time signature changes.","Step input: hit pads on your kit and each hit is written at the cursor, then the cursor moves on.","Save scores on the device, practise them like any song, and save them as MIDI files."]},
@@ -1157,6 +1471,7 @@ function showNews(v){
 
 function frame(){
   requestAnimationFrame(frame);
+  silPrep();
   if(playing){
     songTime=cur();
     if(practice){
@@ -1165,6 +1480,7 @@ function frame(){
       if(w){songTime=w.t;startSong=songTime;startWall=performance.now();waiting=true;if(audio)audio.pause()}else waiting=false;
     }else waiting=false;
     if(audio&&!practice&&audio.paused&&!audio.ended&&songTime>=0){audio.currentTime=songTime;audio.play().catch(()=>{})}
+    if(audio)audio.muted=silentAt(songTime);
     const nowT=performance.now();
     const hear=$("hear").checked;
     if(hear)heard=true;
@@ -1173,8 +1489,8 @@ function frame(){
     if(tPlay>15000){addTime(tPlay/1000);tPlay=0}
     for(const n of notes){
       if(n.t>songTime+.2+aud/1000*rate)break;
-      if(!practice&&!n.j&&n.t<songTime-win[2]){n.j=1;n.r="miss";jc++;misses++;combo=0;ls[n.l].m++;missT.push(n.t);stat();if(!hear)fbSet(n.l,"Miss","#d64550")}
-      if((hear||!focus[n.l])&&!n.s&&n.t<=songTime+aud/1000*rate&&(!loopOn||loopA==null||loopB==null||n.t<loopB)){n.s=1;snd(n.l,Math.max(0,(n.t-songTime)/rate-aud/1000))}
+      if(!practice&&!n.j&&n.t<songTime-win[2]){n.j=1;n.r="miss";jc++;misses++;combo=0;ls[n.l].m++;missT.push(n.t);const sv=silentAt(n.t);(sv?silS:clkS).m++;stat();if(!hear&&!sv)fbSet(n.l,"Miss","#d64550")}
+      if((hear||!focus[n.l])&&!n.s&&n.t<=songTime+aud/1000*rate&&(!loopOn||loopA==null||loopB==null||n.t<loopB)){n.s=1;if(!silentAt(n.t))snd(n.l,Math.max(0,(n.t-songTime)/rate-aud/1000))}
       if(n.s===1&&n.t<=songTime){n.s=2;flash[n.l]=1}
     }
     if(loopOn&&loopA!=null&&loopB!=null&&loopB>loopA+.2&&songTime>=loopB){
@@ -1188,17 +1504,17 @@ function frame(){
       const tb=beatT(nb);
       if(tb>songTime+(practice?.02:(.12+aud/1000)*rate))break;
       if(looping&&tb>=loopB)break;
-      if(tb>=songTime-.03&&(nb<0||met||tb<gapEnd))clk(ac.currentTime+Math.max(0,(tb-songTime)/rate-aud/1000),isBarBeat(nb));
+      if(tb>=songTime-.03&&(nb<0||tb<gapEnd||(met&&!silentAt(tb))))clk(ac.currentTime+Math.max(0,(tb-songTime)/rate-aud/1000),isBarBeat(nb));
       if(met&&nb>=0&&sub>1&&!practice){
         const nt=beatT(nb+1),span=(isFinite(nt)?nt:tb+bd)-tb;
-        for(let k=1;k<sub;k++){const t2=tb+k*span/sub;if(t2>=songTime-.03&&!(looping&&t2>=loopB))clk(ac.currentTime+Math.max(0,(t2-songTime)/rate-aud/1000),false,.45)}
+        for(let k=1;k<sub;k++){const t2=tb+k*span/sub;if(t2>=songTime-.03&&!(looping&&t2>=loopB)&&!silentAt(t2))clk(ac.currentTime+Math.max(0,(t2-songTime)/rate-aud/1000),false,.45)}
       }
       nb++;
     }
     if(!practice&&!waiting){
       while(bi<back.length&&back[bi].t<=songTime+(.12+aud/1000)*rate){
         const x=back[bi++];
-        if(ac&&$("bkOn").checked&&x.t>=songTime-.03&&!(looping&&x.t>=loopB))bk(x,ac.currentTime+Math.max(0,(x.t-songTime)/rate-aud/1000));
+        if(ac&&$("bkOn").checked&&x.t>=songTime-.03&&!(looping&&x.t>=loopB)&&!silentAt(x.t))bk(x,ac.currentTime+Math.max(0,(x.t-songTime)/rate-aud/1000));
       }
     }
     if(songTime>endT)finish();
@@ -1242,7 +1558,7 @@ $("midi").onclick=async()=>{
           const [s,n,v]=m.data;
           if((s&0xF0)===0x90&&v>0){
             const l=kitLane[n]??noteLane[n];
-            if(l!==undefined)hit(l,midiTime(m),true);else say("Unmapped drum note "+n);
+            if(l!==undefined)hit(l,midiTime(m),true,v);else say("Unmapped drum note "+n);
           }
         };
         names.push(inp.name);
@@ -1905,7 +2221,9 @@ $("newsB").onclick=()=>showNews(NEWS[0].v);
 $("stickChk").checked=stickOn;
 $("stickChk").onchange=e=>{stickOn=e.target.checked;try{localStorage.setItem("sw_stick",stickOn?"1":"0")}catch(err){}};
 $("songs").onclick=showSongs;
-$("prog").onclick=showProgress;
+$("prog").onclick=showOverview;
+$("silSel").value=silentMode;
+$("silSel").onchange=e=>{silentMode=+e.target.value;try{localStorage.setItem("sw_silent",silentMode)}catch(err){}silPrep();say(silentMode?"Silent bars on: the click, backing and app-played drums drop out for some bars. Keep the time going yourself.":"Silent bars off.")};
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&tPlay>2000){addTime(tPlay/1000);tPlay=0}});
 showStats();
 
@@ -2558,7 +2876,7 @@ $("emptyWrite").onclick=showWrite;
 songTime=-2;resize();requestAnimationFrame(frame);
 </script>
 <script>
-const APP_VERSION="1.11.1";
+const APP_VERSION="1.12.0";
 document.getElementById("ver").textContent="v"+APP_VERSION;
 try{
   const prev=localStorage.getItem("sw_ver");
