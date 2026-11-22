@@ -1,4 +1,4 @@
-# Stickwork v1.12.0
+# Stickwork v1.13.0
 
 Personal drum practice app (installable web app) for an e-drum kit, touch screen or keyboard.
 
@@ -16,6 +16,12 @@ Personal drum practice app (installable web app) for an e-drum kit, touch screen
 ## Updating
 For a new version, replace `index.html` and `sw.js`. Open the app and tap **Update** on the banner.
 The version is shown under Settings, and What's new appears after an update.
+
+## What's in v1.13.0 (new layout)
+- The app opens on a library with tabs: Lessons, My music, Create, Progress and Settings. Lessons and rudiments are cards with stars, BPM, length and the pads you will use. Tapping one opens its coach card.
+- Songs open on a separate play screen. Modes at the top: Listen, Learn (waits for you), Play and Perform. Tempo has − and + buttons. Loop, silent bars, metronome, backing and view options are under ⋯.
+- Notes move across from right to left, lined up with the notation above. Falling notes are still available in Settings.
+- Touch pads hide automatically when a drum kit is connected.
 
 ## What's in v1.12.0 (learner update)
 - Coach me: tap a lesson for a coach card that explains the groove in everyday terms, then five steps that run themselves: listen, learn it with wait-for-me, 70%, 85% and full speed (pass each with 85%).

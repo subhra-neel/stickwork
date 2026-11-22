@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<!-- Stickwork v1.12.0 -->
+<!-- Stickwork v1.13.0 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Stickwork – drum practice</title>
@@ -67,7 +67,6 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 #resCard li{margin:3px 0}
 #perfBar{display:none;gap:10px;align-items:center;padding:8px 10px}
 #perfHud{flex:1;text-align:center;font-size:30px;font-weight:700}
-body.perf .bar,body.perf .row,body.perf #stats,body.perf #staffWrap,body.perf details{display:none}
 body.perf #perfBar{display:flex}
 #empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--mute);pointer-events:none;line-height:1.5}
 #pads{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:3px;padding:6px 8px 8px}
@@ -142,82 +141,237 @@ summary{cursor:pointer}
 #resCard .kpis b{display:block;font-size:22px;line-height:1.1}
 #resCard .kpis span{color:var(--mute);font-size:12px}
 #resCard .cal{display:block;width:100%;max-width:300px;height:auto;margin:4px 0}
+/* v1.12 layout: library home + play screen, like a practice app */
+:root{--accent:#e0435a;--gold:#e8a317;--card:#ffffff;--soft:#00000010}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--accent:#ff5d73;--gold:#ffd166;--card:#232637;--soft:#ffffff12}}
+:root[data-theme="dark"]{--accent:#ff5d73;--gold:#ffd166;--card:#232637;--soft:#ffffff12}
+[hidden]{display:none!important}
+.btn.icon{min-width:44px;padding:8px 10px;text-align:center}
+.mutey{color:var(--mute);font-size:13px}
+.chk{display:flex;gap:8px;align-items:center;padding:6px 0;color:var(--ink)}
+.chk input{display:inline;margin:0;width:18px;height:18px}
+.srowx{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:5px 0;color:var(--mute)}
+.srowx input[type=range]{flex:1;min-width:120px}
+.srowx input[type=number]{width:4.2em;min-height:40px;box-sizing:border-box;font:inherit;font-weight:700;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:4px 8px}
+.srowx b{color:var(--ink);min-width:4.5em}
+
+/* header and tabs */
+#top{flex:none;display:flex;align-items:center;gap:12px;padding:10px max(14px,env(safe-area-inset-left,0px)) 6px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:21px;letter-spacing:.2px}
+.brand svg{width:30px;height:30px}
+#tabs{display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+#tabs::-webkit-scrollbar{display:none}
+#tabs button{flex:none;border:0;background:none;color:var(--mute);font:inherit;font-weight:700;font-size:16px;padding:10px 14px;border-radius:999px;cursor:pointer}
+#tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.topR{display:flex;gap:8px;align-items:center}
+.kit{display:flex;gap:8px;align-items:center;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer;min-height:44px}
+.kit i{width:10px;height:10px;border-radius:50%;background:var(--mute)}
+.kit.on i{background:#19a463;box-shadow:0 0 0 4px #19a46333}
+body.playing #top{display:none}
+@media (max-width:640px){.brand span{display:none}#tabs button{padding:8px 10px;font-size:15px}.kit span{display:none}}
+
+/* home */
+#home{flex:1;min-height:0;overflow-y:auto;padding:4px max(14px,env(safe-area-inset-left,0px)) 24px max(14px,env(safe-area-inset-right,0px));-webkit-user-select:none;user-select:none}
+.hh{font-size:26px;margin:14px 2px 10px;text-wrap:balance}
+.sub{color:var(--mute);margin:-4px 2px 12px}
+.hero{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-top:10px}
+@media (max-width:860px){.hero{grid-template-columns:1fr 1fr}.hero .big{grid-column:1/-1}}
+@media (max-width:480px){.hero{grid-template-columns:1fr}}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0;cursor:pointer;text-align:left;color:var(--ink);font:inherit}
+.tile:hover{border-color:var(--ink)}
+.tile .k{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--mute);font-weight:700}
+.tile .t{font-size:20px;font-weight:700;line-height:1.15}
+.tile .d{color:var(--mute);font-size:14px}
+.tile .go{margin-top:auto;align-self:flex-start;background:var(--ink);color:var(--bg);border-radius:999px;padding:8px 16px;font-weight:700}
+.tile.big{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tile.big .k,.tile.big .d{color:var(--bg);opacity:.75}
+.tile.big .t{font-size:26px}
+.tile.big .go{background:var(--accent);color:#fff}
+.lvls{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 10px}
+.lvls button{border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:700;border-radius:999px;padding:8px 14px;cursor:pointer;min-height:40px}
+.lvls button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.lvls small{opacity:.7;font-weight:500;margin-left:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.lc{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:8px;cursor:pointer;text-align:left;color:var(--ink);font:inherit;min-width:0;overflow:hidden}
+.lc:hover{border-color:var(--ink)}
+.lc .strip{position:absolute;inset:0 0 auto;height:5px}
+.lc .n{font-weight:700;font-size:17px;line-height:1.2;margin-top:4px}
+.lc .m{color:var(--mute);font-size:13px;display:flex;gap:8px;flex-wrap:wrap}
+.lc .dots{display:flex;gap:4px;flex-wrap:wrap}
+.lc .dots i{width:12px;height:12px;border-radius:4px}
+.lc .f{display:flex;justify-content:space-between;align-items:center;margin-top:auto}
+.lc .stars{font-size:18px;letter-spacing:1px;color:var(--gold)}
+.lc .stars .off{color:var(--line)}
+.done{font-size:12px;font-weight:700;color:#19a463}
+.lc .acts{display:flex;gap:6px;flex-wrap:wrap}
+.lc .acts .btn{padding:6px 10px;font-size:13px;min-height:36px}
+.sect{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:22px 2px 10px}
+.sect h3{margin:0;font-size:18px}
+.empty{color:var(--mute);background:var(--soft);border-radius:14px;padding:16px}
+.stat3{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.stat3 .tile{cursor:default}
+.stat3 .v{font-size:32px;font-weight:700;font-variant-numeric:tabular-nums}
+.bar2{height:8px;border-radius:6px;background:var(--line);overflow:hidden}
+.bar2 i{display:block;height:100%;background:var(--accent)}
+.lvrow{display:grid;grid-template-columns:110px 1fr 60px;gap:10px;align-items:center;padding:6px 0}
+.lvrow span:last-child{text-align:right;color:var(--mute);font-variant-numeric:tabular-nums}
+.runs{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.runs td,.runs th{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+.runs th{color:var(--mute);font-weight:500}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.scard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.scard h3{margin:0 0 6px;font-size:17px}
+.scard p{margin:4px 0}
+#focusRow .btn{padding:6px 10px;font-size:13px}
+
+/* player */
+#player{flex:1;min-height:0;display:flex;flex-direction:column}
+#pTop{flex:none;display:flex;align-items:center;gap:10px;padding:8px max(10px,env(safe-area-inset-left,0px)) 4px;flex-wrap:wrap}
+#pTitle{flex:1;min-width:150px;display:flex;flex-direction:column;line-height:1.2}
+#pTitle b{color:var(--ink);text-align:left;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#pTitle #judge{font-size:14px}
+.seg{display:flex;background:var(--soft);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;color:var(--mute);font:inherit;font-weight:700;font-size:15px;padding:8px 14px;border-radius:999px;cursor:pointer;min-height:40px}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.seg button[data-m="perform"].on{background:var(--accent);color:#fff}
+.tempo{display:flex;align-items:center;background:var(--soft);border-radius:999px;padding:3px}
+.tempo button{border:0;background:var(--card);color:var(--ink);font:inherit;font-weight:700;font-size:20px;width:40px;height:40px;border-radius:50%;cursor:pointer}
+.tempo span{min-width:8.5em;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+#stats{padding:0 12px;min-height:1.4em}
+#staffWrap{margin:4px 8px 6px}
+#stage{margin:0 8px}
+#transport{flex:none;display:flex;align-items:center;gap:10px;padding:8px max(10px,env(safe-area-inset-left,0px)) 10px}
+#transport #play{min-width:110px;font-size:17px;border-radius:999px}
+#transport #seek{flex:1;min-width:0;accent-color:var(--accent)}
+#transport #pos{min-width:3em;text-align:right;font-variant-numeric:tabular-nums}
+#pads{padding:6px 8px 0}
+body.nopads #pads{display:none}
+@media (max-width:700px){.tempo span{min-width:5.6em;font-size:13px}.seg button{padding:8px 10px;font-size:14px}#pTitle{order:-1;flex-basis:calc(100% - 120px)}}
+
+/* performance mode */
+body.perf #modes,body.perf .tempo,body.perf #moreB,body.perf #transport,body.perf #stats{display:none}
+body.perf #perfBar{display:flex}
+body.perf #staffWrap{display:none}
+
+/* options sheet */
+#sheetBg{display:none;position:fixed;inset:0;background:#0007;z-index:25}
+#sheet{position:fixed;top:0;bottom:0;right:0;width:min(400px,92vw);z-index:26;background:var(--panel);color:var(--ink);box-shadow:-8px 0 30px #0006;transform:translateX(105%);transition:transform .2s ease;overflow-y:auto;padding:max(12px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 24px 16px;box-sizing:border-box}
+body.sheet #sheet{transform:none}
+body.sheet #sheetBg{display:block}
+#sheet h3{margin:16px 0 4px;font-size:15px;text-transform:uppercase;letter-spacing:.8px;color:var(--mute)}
+.shHead{display:flex;justify-content:space-between;align-items:center;font-size:19px}
+@media (prefers-reduced-motion:reduce){#sheet{transition:none}}
+.grid .empty{grid-column:1/-1}
+@media (max-width:700px){#backB{order:-2}}
+@media (max-width:520px){#transport #pos{display:none}#transport #play{min-width:88px}#transport{gap:8px}}
+@media (max-width:640px){#top{justify-content:space-between}#tabs{order:3;flex-basis:100%}.brand span{display:inline}}
 </style>
 </head>
 <body>
 <div id="upd"><span>A new version of Stickwork is ready.</span><button id="updBtn">Update</button></div>
-<div class="bar scroll">
-  <button class="btn main" id="lessonsB">Lessons</button>
-  <button class="btn" id="workB">Daily workout</button>
-  <button class="btn" id="freeB">Free play</button>
-  <button class="btn" id="chordB">From chords</button>
-  <button class="btn" id="writeB">Write &amp; edit</button>
-  <button class="btn" id="perfB">Performance</button>
-  <button class="btn" id="midi">Connect drum kit</button>
-  <button class="btn" id="prog">Progress</button>
-  <button class="btn" id="toolsB" aria-expanded="false" aria-controls="tools">Tools ▾</button>
-  <button class="btn" id="helpB" aria-label="Help and quick start">?</button>
-  <span id="title">No song loaded</span>
-</div>
-<div class="bar" style="padding-top:2px">
-  <button class="btn main" id="play">Play</button>
-  <button class="btn" id="restart">Restart</button>
-  <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="hear" type="checkbox" style="display:inline;margin:0"> Play drums for me</label>
-  <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="prac" type="checkbox" style="display:inline;margin:0"> Practice: wait for me</label>
-</div>
-<div class="row"><span>Tempo</span><input id="tempo" type="range" min="40" max="120" step="5" value="100" aria-label="Tempo percent"><b id="tempoV">100%</b></div>
-<div id="tools">
-  <div class="bar" style="padding-top:2px">
-    <label class="btn">Open file<input id="mid" type="file"></label>
-    <label class="btn">Backing track<input id="aud" type="file" accept="audio/*,video/*"></label>
-    <button class="btn" id="songs">Songs</button>
-    <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="trn" type="checkbox" style="display:inline;margin:0"> Speed trainer</label>
-    <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="bkOn" type="checkbox" checked style="display:inline;margin:0"> Backing music</label>
-    <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="simp" type="checkbox" checked style="display:inline;margin:0"> Keep drum parts playable</label>
-    <label class="btn" style="display:flex;gap:6px;align-items:center">Silent bars <select id="silSel" aria-label="Silent bars" style="font:inherit;font-weight:700;background:var(--panel);color:var(--ink);border:0"><option value="0">Off</option><option value="1">Every other bar</option><option value="2">2 on, 2 off</option><option value="3">4 on, 4 off</option></select></label>
+<header id="top">
+  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="var(--panel)" stroke="var(--gold)" stroke-width="2.4"/><circle cx="16" cy="16" r="8.5" fill="var(--accent)"/><circle cx="16" cy="16" r="4.5" fill="var(--bg)"/><path d="M6 6 26 26M26 6 6 26" stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round"/></svg><span>Stickwork</span></div>
+  <nav id="tabs" role="tablist" aria-label="Library">
+    <button role="tab" data-tab="lessons">Lessons</button>
+    <button role="tab" data-tab="music">My music</button>
+    <button role="tab" data-tab="create">Create</button>
+    <button role="tab" data-tab="progress">Progress</button>
+    <button role="tab" data-tab="settings">Settings</button>
+  </nav>
+  <div class="topR"><button class="kit" id="midi"><i></i><span>Connect kit</span></button><button class="btn icon" id="helpB" aria-label="Help and quick start">?</button></div>
+</header>
+
+<main id="home">
+  <div id="homeBody"></div>
+  <section id="setPane" hidden>
+    <h2 class="hh">Settings</h2>
+    <div class="sgrid">
+      <div class="scard"><h3>Timing</h3>
+        <div class="srowx"><span>Timing window</span><select id="winSel" class="btn"><option value="0">Easy</option><option value="1">Normal</option><option value="2">Strict</option></select></div>
+        <div class="srowx"><span>Input latency</span><input id="lat" type="range" min="-400" max="400" step="5" value="0"><b id="latV">0 ms</b></div>
+        <div class="srowx"><button class="btn" id="calB">Calibrate hits</button><span id="mdiag" class="mutey">MIDI clock offset: –</span></div>
+      </div>
+      <div class="scard"><h3>Sound</h3>
+        <div class="srowx"><span>Audio delay</span><input id="audD" type="range" min="0" max="600" step="10" value="0"><b id="audV">0 ms</b></div>
+        <p class="mutey">Bluetooth headphones add roughly 200 to 400 ms. Raise this until the click you hear lines up with the notes.</p>
+        <div class="srowx"><span>Click</span><select id="subSel" class="btn"><option value="1">Beats</option><option value="2">Eighths</option><option value="4">Sixteenths</option></select></div>
+        <div class="srowx"><span>Count-in</span><select id="cntSel" class="btn"><option value="0">None</option><option value="1">1 bar</option><option value="2">2 bars</option></select></div>
+        <label class="chk"><input id="padSnd" type="checkbox"> Also play the app’s drum sounds when I hit the kit</label>
+      </div>
+      <div class="scard"><h3>Display</h3>
+        <div class="srowx"><span>Notes move</span><select id="hwSel" class="btn"><option value="across">Across (right to left)</option><option value="fall">Down (falling)</option></select></div>
+        <div class="srowx"><span>Touch pads</span><select id="padSel" class="btn"><option value="auto">Hide when a kit is connected</option><option value="1">Always show</option><option value="0">Always hide</option></select></div>
+        <label class="chk"><input id="stickChk" type="checkbox" checked> Show R/L sticking hints on lessons</label>
+        <label class="chk"><input id="simp" type="checkbox" checked> Keep imported drum parts playable (two hands, two feet)</label>
+      </div>
+      <div class="scard"><h3>Focus pads</h3>
+        <p class="mutey">Turn pads off and the app plays them for you.</p>
+        <div id="focusRow" class="chips"></div>
+      </div>
+      <div class="scard"><h3>Your data</h3>
+        <p class="mutey">Songs, scores and progress stay on this device.</p>
+        <div class="srowx"><button class="btn" id="expB">Export progress</button><label class="btn">Import progress<input id="impF" type="file" accept=".json,application/json"></label><button class="btn" id="newsB">What’s new</button></div>
+        <div id="pstat" class="mutey"></div>
+        <div class="srowx"><span>Version</span><b id="ver"></b></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<section id="player" hidden>
+  <div id="pTop">
+    <button class="btn icon" id="backB" aria-label="Back to the library">‹</button>
+    <div id="pTitle"><b id="title">No song loaded</b><span id="judge" aria-live="polite">Pick a lesson to begin.</span></div>
+    <div class="seg" id="modes" role="group" aria-label="Mode">
+      <button data-m="listen" title="The app plays the drums so you can hear the part">Listen</button>
+      <button data-m="learn" title="The song waits for you to hit each note">Learn</button>
+      <button data-m="play" title="Play along in time and get scored">Play</button>
+      <button data-m="perform" title="One scored run with a star rating">Perform</button>
+    </div>
+    <div class="tempo"><button id="tDn" aria-label="Slower">−</button><span id="tempoV">100%</span><button id="tUp" aria-label="Faster">+</button></div>
+    <button class="btn icon" id="moreB" aria-label="More options">⋯</button>
   </div>
-  <div class="row"><span>Position</span><input id="seek" type="range" min="0" max="1000" value="0" aria-label="Song position"><b id="pos">0:00</b></div>
-  <div class="bar" style="padding-top:4px">
-    <button class="btn" id="setA">Set A</button>
-    <button class="btn" id="setB">Set B</button>
+  <div id="stats"><span id="acc"></span><span id="cmb"></span></div>
+  <div id="perfBar"><button class="btn main" id="perfGo">Start</button><span id="perfHud">–</span><button class="btn" id="perfExit">Exit</button></div>
+  <div id="staffWrap"><canvas id="staff"></canvas></div>
+  <div id="stage">
+    <canvas id="cv"></canvas>
+    <div id="empty"><div><p>Pick something to play from the library.</p></div></div>
+  </div>
+  <div id="pads"></div>
+  <div id="transport">
+    <button class="btn icon" id="restart" aria-label="Back to the start">⟲</button>
+    <button class="btn main" id="play">Play</button>
+    <b id="pos">0:00</b>
+    <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Song position">
     <button class="btn" id="loopT">Loop: off</button>
-    <button class="btn" id="clrL">Clear</button>
-    <span style="display:flex;gap:4px;align-items:center;color:var(--mute)">Bars <input id="lbA" type="number" min="1" value="1" style="width:3.4em"> to <input id="lbB" type="number" min="1" value="2" style="width:3.4em"> <button class="btn" id="lbGo">Loop</button></span>
-    <button class="btn" id="staffT">Staff: on</button>
-    <label class="btn" style="display:flex;gap:6px;align-items:center"><input id="met" type="checkbox" style="display:inline;margin:0"> Metronome</label>
-    <span id="loopInfo" style="color:var(--mute)"></span>
   </div>
-  <div class="row"><span>Loop gap</span><input id="gap" type="range" min="0" max="8" step="1" value="0" aria-label="Rest between loops in beats"><b id="gapV" style="min-width:5em;white-space:nowrap">0 beats</b></div>
-</div>
-<div id="stats"><span id="acc"></span><span id="cmb"></span><span id="judge" aria-live="polite">Pick a lesson to begin.</span></div>
-<div id="perfBar"><button class="btn main" id="perfGo">Start</button><span id="perfHud">–</span><button class="btn" id="perfExit">Exit</button></div>
+</section>
+
+<div id="sheetBg"></div>
+<aside id="sheet" aria-label="More options">
+  <div class="shHead"><b>Options</b><button class="btn icon" id="sheetX" aria-label="Close">✕</button></div>
+  <h3>Tempo</h3>
+  <div class="srowx"><input id="tempo" type="range" min="40" max="120" step="5" value="100" aria-label="Tempo percent"></div>
+  <label class="chk"><input id="trn" type="checkbox"> Speed trainer (+5% after a clean run)</label>
+  <h3>Loop</h3>
+  <div class="srowx"><span>Bars</span><input id="lbA" type="number" min="1" value="1"> <span>to</span> <input id="lbB" type="number" min="1" value="2"><button class="btn" id="lbGo">Loop these bars</button></div>
+  <div class="srowx"><button class="btn" id="setA">Set A here</button><button class="btn" id="setB">Set B here</button><button class="btn" id="clrL">Clear</button><span id="loopInfo" class="mutey"></span></div>
+  <div class="srowx"><span>Gap between loops</span><input id="gap" type="range" min="0" max="8" step="1" value="0" aria-label="Rest between loops in beats"><b id="gapV">0 beats</b></div>
+  <h3>Sound</h3>
+  <div class="srowx"><span>Silent bars</span><select id="silSel" class="btn" aria-label="Silent bars"><option value="0">Off</option><option value="1">Every other bar</option><option value="2">2 on, 2 off</option><option value="3">4 on, 4 off</option></select></div>
+  <p class="mutey" style="margin:0">The click and backing drop out so you keep time yourself.</p>
+  <label class="chk"><input id="met" type="checkbox"> Metronome</label>
+  <label class="chk"><input id="bkOn" type="checkbox" checked> Backing music</label>
+  <div class="srowx"><button class="btn" id="audB">Add a backing track…</button></div>
+  <h3>View</h3>
+  <div class="srowx"><button class="btn" id="staffT">Staff: on</button><button class="btn" id="padT">Pads</button><button class="btn" id="hwT">Notes: across</button></div>
+  <h3>This song</h3>
+  <div class="srowx"><button class="btn" id="prog">My progress</button><button class="btn" id="editB">Edit the notation</button></div>
+  <input id="hear" type="checkbox" hidden><input id="prac" type="checkbox" hidden>
+</aside>
+<input id="mid" type="file" hidden><input id="aud" type="file" accept="audio/*,video/*" hidden>
 <div id="res"><div id="resCard"></div></div>
-<div id="staffWrap"><canvas id="staff"></canvas></div>
-<div id="stage">
-  <canvas id="cv"></canvas>
-  <div id="empty"><div>
-    <p style="font-size:18px;color:var(--ink);font-weight:700">Ready to play some drums?</p>
-    <p>Start with a built-in lesson, turn chords into a drum part, write your own notation, or open your own MIDI, MuseScore or Guitar Pro file from Tools.</p>
-    <p>Play with an e-drum kit, the pads below, or your keyboard.</p>
-    <div class="btns"><button class="btn main" id="emptyGo">Start a lesson</button><button class="btn" id="emptyWrite">Write my own</button><button class="btn" id="emptyHelp">How it works</button></div>
-  </div></div>
-</div>
-<div id="pads"></div>
-<details><summary>Settings</summary>
-  <div class="row" style="padding:6px 0"><span>Input latency</span><input id="lat" type="range" min="-400" max="400" step="5" value="0"><b id="latV">0 ms</b></div>
-<div class="row" style="padding:6px 0"><span>Click</span><select id="subSel" class="btn"><option value="1">Beats</option><option value="2">Eighths</option><option value="4">Sixteenths</option></select></div>
-<div style="padding:4px 0"><div style="margin-bottom:4px">Focus on these pads (the app plays the others for you):</div><div id="focusRow" class="chips"></div></div>
-<div class="row" style="padding:6px 0"><span>Count-in</span><select id="cntSel" class="btn"><option value="0">None</option><option value="1">1 bar</option><option value="2">2 bars</option></select></div>
-<div class="row" style="padding:6px 0"><span>Timing</span><select id="winSel" class="btn"><option value="0">Easy</option><option value="1">Normal</option><option value="2">Strict</option></select><button class="btn" id="calB">Calibrate hits</button></div>
-<div class="row" style="padding:6px 0"><span>Audio delay</span><input id="audD" type="range" min="0" max="600" step="10" value="0"><b id="audV" style="min-width:4.5em">0 ms</b></div>
-<div style="color:var(--mute);font-size:13px;padding:0 0 6px">Bluetooth headphones add roughly 200 to 400 ms. Raise this until the click you hear lines up with the notes.</div>
-<label style="display:flex;gap:6px;align-items:center;padding:4px 0"><input id="stickChk" type="checkbox" checked> Show R/L sticking hints on lessons</label>
-<label style="display:flex;gap:6px;align-items:center;padding:4px 0"><input id="padSnd" type="checkbox"> Also play the app’s drum sounds when I hit the kit</label>
-<div id="mdiag" style="padding:2px 0;color:var(--mute)">MIDI clock offset: –</div>
-<div style="padding:6px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn" id="newsB">What’s new</button><button class="btn" id="expB">Export progress</button><label class="btn">Import progress<input id="impF" type="file" accept=".json,application/json"></label></div>
-<div id="pstat" style="padding:4px 0"></div>
-<div class="row" style="padding:2px 0"><span>Version</span><b id="ver" style="min-width:0;text-align:left"></b></div>
-</details>
 
 <div id="ed" role="dialog" aria-label="Notation editor">
   <div class="bar eb">
@@ -525,7 +679,8 @@ let staffOn=true;
 try{if(localStorage.getItem("sw_staff")==="0")staffOn=false}catch(e){}
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",colors);
 
-function draw(){
+function draw(){if(hwDir==="across")drawAcross();else drawFall();if(!$("player").hidden)syncModes()}
+function drawFall(){
   const W=cv.clientWidth,H=cv.clientHeight,lw=W/L.length,hy=H*.86,px=hy/2.2;
   ctx.clearRect(0,0,W,H);
   for(let i=0;i<L.length;i++){
@@ -1068,7 +1223,8 @@ function myLevel(){
   }
   return lv;
 }
-function showLessons(sel){
+function showLessons(sel){homeLv=sel==null?null:sel;goHome("lessons")}
+function showLessonsOld(sel){
   const now=myLevel();if(sel==null)sel=now;
   const rud=sel==="r",list=rud?RUD:LES.filter(x=>x.lv===sel);
   const chips=LV.map((n,i)=>`<button class="btn${i===sel?" main":""}" data-lv="${i}">${n}</button>`).join("")+`<button class="btn${rud?" main":""}" data-lv="r">Rudiments</button>`;
@@ -1225,13 +1381,15 @@ function showHelp(){
   const w=win.map(x=>Math.round(x*1000));
   panel(`<h2>How Stickwork works</h2>
   <h3>Quick start</h3>
-  <ol><li>Tap <b>Lessons</b> and pick one. Start at Beginner.</li>
-  <li>Tap <b>Play drums for me</b> and <b>Play</b> to hear it first.</li>
-  <li>Switch on <b>Practice: wait for me</b> to learn it. The song waits for you.</li>
-  <li>Switch it off and play along to the click. Hit each pad when its note reaches the line.</li></ol>
+  <ol><li>Pick a lesson card in <b>Lessons</b>. Start at Beginner.</li>
+  <li>Choose <b>Listen</b> and press Play to hear it first.</li>
+  <li>Choose <b>Learn</b>. The song waits until you hit each note.</li>
+  <li>Choose <b>Play</b> and play along to the click. Hit each pad as its note reaches the line.</li>
+  <li>Choose <b>Perform</b> for one scored run with a star rating.</li></ol>
+  <p>The <b>⋯</b> button on the play screen has the loop, metronome, backing music and view options.</p>
   <h3>How you are scored</h3>
   <ul><li><b>Perfect</b>: within ${w[0]} ms of the note.</li><li><b>Early / Late</b>: within ${w[1]} ms (counts as most of a hit).</li><li><b>Off</b>: within ${w[2]} ms (counts as part of a hit).</li><li><b>Miss</b>: a note you did not play in time.</li></ul>
-  <p>Change how strict this is under Settings, Timing.</p>
+  <p>Change how strict this is in Settings, Timing window.</p>
   <h3>Levels</h3>
   <p>Master about 60% of the lessons in a level to move up. A lesson is mastered at 85% accuracy or better at 90% tempo or faster. Slow the tempo down while you learn.</p>
   <h3>Coach me</h3>
@@ -1246,7 +1404,7 @@ function showHelp(){
   <ol><li>Use a USB cable (a USB-C adapter on a tablet).</li><li>Open Stickwork in Chrome and tap <b>Connect drum kit</b>. Allow MIDI access.</li><li>Hit a pad. Its lane should light up.</li><li>Open Settings and run <b>Calibrate hits</b> once.</li></ol>
   <p>If a pad does nothing, the message line shows its note number. Unplug and re-plug the cable, then try again.</p>
   <h3>Getting music in</h3>
-  <ul><li><b>From chords:</b> paste chords from Ultimate Guitar, or type them like | Am | F | C | G |, or in sargam like | Sa | Re | Ga | Pa |. Pick a style and Stickwork writes the drums.</li><li><b>MuseScore:</b> download the MIDI or MusicXML file, then Tools, Open file.</li><li><b>Songsterr:</b> open the Guitar Pro file (.gp, .gp5) you downloaded. Only the drum track is used.</li><li><b>PDF:</b> a PDF is a picture, so notes cannot be read from it. Use MIDI or MusicXML instead.</li><li><b>No drums in the file, or an mp3:</b> Stickwork guesses the chords bar by bar and opens them in From chords so you can correct them and build a drum part.</li></ul>
+  <ul><li><b>From chords:</b> paste chords from Ultimate Guitar, or type them like | Am | F | C | G |, or in sargam like | Sa | Re | Ga | Pa |. Pick a style and Stickwork writes the drums.</li><li><b>MuseScore:</b> download the MIDI or MusicXML file, then My music, Open a file.</li><li><b>Songsterr:</b> open the Guitar Pro file (.gp, .gp5) you downloaded. Only the drum track is used.</li><li><b>PDF:</b> a PDF is a picture, so notes cannot be read from it. Use MIDI or MusicXML instead.</li><li><b>No drums in the file, or an mp3:</b> Stickwork guesses the chords bar by bar and opens them in From chords so you can correct them and build a drum part.</li></ul>
   <h3>Writing your own notation</h3>
   <ul><li>Tap <b>Write &amp; edit</b>. Create a new score, or edit the song that is loaded (lesson, chords, MIDI or a score file).</li><li>Tap the grid to add a note. Tap a note to select it, tap again to remove it. Tap a bar in the notation to jump to it.</li><li>Pick a length to change the selected note. With <b>Shift later notes</b> on, the rest of the bar moves along. With it off, the longer note writes over what follows.</li><li>Change the time signature, grid and tempo for each bar. Tick <b>and every bar after</b> to change the rest of the song too.</li><li><b>Step input</b> writes a note at the cursor for every pad you hit on the kit.</li><li><b>Practise this</b> loads the score from the bar you are on. <b>Save</b> keeps it under My scores.</li></ul>
   <h3>Headphones</h3>
@@ -1447,6 +1605,7 @@ function assignStick(out){
   });
 }
 const NEWS=[
+{v:"1.13.0",items:["New layout. The app opens on a library with tabs: Lessons, My music, Create, Progress and Settings. Lessons are cards with stars, BPM, length and the pads you will use.","Tapping a lesson or song opens a separate play screen. Pick a mode at the top: Listen, Learn (waits for you), Play or Perform. Tempo has − and + buttons.","Notes now move across the screen from right to left towards the hit line, with bar numbers. You can switch back to falling notes in Settings or with the ⋯ button.","Loop, metronome, backing music and view options are under the ⋯ button on the play screen. Back (‹) returns to the library.","The touch pads hide when a drum kit is connected. Change this in Settings, Display."]},
 {v:"1.12.0",items:["Coach me: tap a lesson for a coach card that explains the groove in everyday terms and walks you through five steps: listen, learn it with wait-for-me, then 70%, 85% and full speed. The next step starts when you pass the one before.","Rudiments: eight sticking patterns (singles, doubles, paradiddles, triplets, five-stroke roll and a paradiddle groove) under Lessons, Rudiments. The Daily workout now starts with one.","Silent bars (Tools): the click and backing drop out for some bars while you keep time yourself. Results show whether you rushed or dragged without the click.","Results now show every bar coloured by how you did. Tap a bar to loop it more slowly. On lessons played on a kit, results also show how even your strokes are.","Progress now opens My progress: a practice calendar, lessons mastered per level, lessons that are almost there, and mastered ones due for a review."]},
 {v:"1.11.1",items:["Single letters are always chords, in capitals or small letters: g or G is the G chord, am is A minor, c/g is C/G.","Sargam needs the full name: Sa, Re, Ga, Ma, Pa, Dha, Ni (any case). Short forms like S, M or G are not read as sargam."]},
 {v:"1.11.0",items:["From chords now reads sargam: type | Sa | Re | Ga | Pa | instead of | C | D | E | G |. Devanagari works too (सा रे ग म प ध नि).","Komal notes: Re(k) or Reb. Tivra Ma: Ma' or Ma#. Minor, 7th and slash chords work the same way as letter chords: Rem, Pa7, Sa/Pa.","New setting, Sa is: choose the pitch of Sa (C by default). Chord names show both, for example Re (D)."]},
@@ -1563,7 +1722,7 @@ $("midi").onclick=async()=>{
         };
         names.push(inp.name);
       });
-      $("midi").textContent=names.length?"Kit: "+names[0]:"No kit found";
+      $("midi").innerHTML="<i></i><span>"+esc(names.length?"Kit: "+names[0]:"No kit found")+"</span>";
       if(names.length&&!kitSaid&&!playing){kitSaid=true;say("Kit connected. For the best timing, run Calibrate hits in Settings once.")}
     };
     attach();a.onstatechange=attach;
@@ -2112,7 +2271,7 @@ $("mid").onchange=async e=>{
     loopA=loopB=null;loopOn=false;updLoop();
     songId=f.name+"|"+notes.length;songName=f.name;saveSong(f.name,buf,songId);
     back=[];free=false;wq=null;baseBpm=r.bpm;$("tempo").dispatchEvent(new Event("input"));
-    $("title").textContent=f.name+bestText();$("empty").style.display="none";
+    $("title").textContent=f.name+bestText();$("empty").style.display="none";goPlayer();
     reset();$("play").textContent="Play";
     say(`${notes.length} notes · ${r.bpm} BPM`+(r.usedAll?" · no drum channel, used all notes":"")+simp);
   }catch(err){say("Could not read that file: "+err.message)}
@@ -2176,8 +2335,6 @@ function applyStaff(){
 }
 applyStaff();
 
-$("lessonsB").onclick=()=>showLessons();
-$("perfB").onclick=()=>setPerf(!perf);
 $("perfExit").onclick=()=>setPerf(false);
 $("perfGo").onclick=()=>{
   if(playing){pause();reset();$("perfGo").textContent="Start"}
@@ -2191,17 +2348,10 @@ $("winSel").onchange=e=>{winIdx=+e.target.value;win=WINS[winIdx];try{localStorag
 $("audD").value=aud;$("audV").textContent=aud+" ms";
 $("audD").oninput=e=>{aud=+e.target.value;$("audV").textContent=aud+" ms";try{localStorage.setItem("sw_aud",aud)}catch(err){}};
 $("padSnd").onchange=e=>{soundAll=e.target.checked};
-$("freeB").onclick=showFree;
 try{if(localStorage.getItem("sw_simp")==="0")$("simp").checked=false}catch(e){}
 $("simp").onchange=e=>{try{localStorage.setItem("sw_simp",e.target.checked?"1":"0")}catch(err){}say(e.target.checked?"Imported drum parts will be trimmed to two hands and two feet.":"Imported drum parts will be played exactly as written.")};
-$("chordB").onclick=()=>showChords();
 $("helpB").onclick=showHelp;
-$("emptyHelp").onclick=showHelp;
-$("emptyGo").onclick=()=>showLessons(0);
-$("toolsB").onclick=()=>{toolsOn=!toolsOn;applyTools(toolsOn);try{localStorage.setItem("sw_tools",toolsOn?"1":"0")}catch(e){}};
-applyTools(toolsOn);
 try{if(!localStorage.getItem("sw_seen")&&!localStorage.getItem("sw_hist")&&!localStorage.getItem("sw_ver"))setTimeout(showWelcome,350)}catch(e){}
-$("workB").onclick=showWorkout;
 $("expB").onclick=exportData;
 $("impF").onchange=e=>{const f=e.target.files[0];if(f)importData(f);e.target.value=""};
 $("cntSel").value=countBars;
@@ -2220,7 +2370,6 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden&&playing){p
 $("newsB").onclick=()=>showNews(NEWS[0].v);
 $("stickChk").checked=stickOn;
 $("stickChk").onchange=e=>{stickOn=e.target.checked;try{localStorage.setItem("sw_stick",stickOn?"1":"0")}catch(err){}};
-$("songs").onclick=showSongs;
 $("prog").onclick=showOverview;
 $("silSel").value=silentMode;
 $("silSel").onchange=e=>{silentMode=+e.target.value;try{localStorage.setItem("sw_silent",silentMode)}catch(err){}silPrep();say(silentMode?"Silent bars on: the click, backing and app-played drums drop out for some bars. Keep the time going yourself.":"Silent bars off.")};
@@ -2871,12 +3020,260 @@ function edPlaySong(){
   });
 })();
 
-$("writeB").onclick=showWrite;
-$("emptyWrite").onclick=showWrite;
+/* ---------- v1.12 screens: library home and play screen ---------- */
+let homeTab="lessons",homeLv=null,kitOn=false,hwDir="across",padMode="auto";
+try{hwDir=localStorage.getItem("sw_hw")||"across";padMode=localStorage.getItem("sw_pads")||"auto"}catch(e){}
+const LVC=["#52d1a0","#4cc9f0","#7c8cff","#ff8fd8","#ff5d73"];
+function starHtml(acc){const n=acc==null?0:acc>=95?3:acc>=85?2:acc>=70?1:0;return `<span class="stars" aria-label="${n} of 3 stars">${"★".repeat(n)}<span class="off">${"★".repeat(3-n)}</span></span>`}
+function lessonLanes(les){const s=new Set();les.bars.forEach(b=>Object.keys(b).forEach(k=>{if(LK[k]!==undefined&&/x/.test(b[k]))s.add(LK[k])}));return ROWS.filter(l=>s.has(l))}
+function lessonMins(x){return Math.max(1,Math.round(x.rep*x.bars.length*(x.ts||4)*60/x.bpm/60))}
+
+function goHome(tab){
+  if(playing)pause();if(perf)setPerf(false);closeSheet();
+  document.body.classList.remove("playing");$("player").hidden=true;$("home").hidden=false;
+  renderHome(tab||homeTab);
+}
+function goPlayer(){
+  closePanel();closeSheet();
+  document.body.classList.add("playing");$("home").hidden=true;$("player").hidden=false;
+  applyPads();syncModes();requestAnimationFrame(()=>{resize();resizeStaff()});
+}
+function tabSel(t){document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t?"true":"false"))}
+
+function renderHome(tab){
+  homeTab=tab;tabSel(tab);
+  $("setPane").hidden=tab!=="settings";$("homeBody").hidden=tab==="settings";
+  const H=$("homeBody");
+  if(tab==="lessons")H.innerHTML=homeLessons();
+  else if(tab==="music"){H.innerHTML=homeMusic();fillSongs()}
+  else if(tab==="create")H.innerHTML=homeCreate();
+  else if(tab==="progress")H.innerHTML=homeProgress();
+  else if(tab==="settings")showStats();
+  wireHome();
+  $("home").scrollTop=0;
+}
+function homeLessons(){
+  const lv=myLevel(),sel=homeLv==null?lv:homeLv,next=LES.find(x=>!mastered(x.id))||LES[0];
+  const plan=workoutPlan(),wm=Math.round(plan.reduce((a,x)=>a+lessonMins(x)*2,0));
+  const rud=sel==="r",list=rud?RUD:LES.filter(x=>x.lv===sel);
+  const chips=LV.map((n,i)=>{const arr=LES.filter(x=>x.lv===i),m=arr.filter(x=>mastered(x.id)).length;return `<button data-lv="${i}" class="${i===sel?"on":""}">${n}<small>${m}/${arr.length}</small></button>`}).join("")
+    +`<button data-lv="r" class="${rud?"on":""}">Rudiments<small>${RUD.filter(x=>mastered(x.id)).length}/${RUD.length}</small></button>`;
+  const cards=list.map(x=>{
+    const b=bestOf(x.id);
+    return `<button class="lc" data-les="${x.id}"><span class="strip" style="background:${LVC[x.lv]}"></span>
+      <span class="n">${esc(x.n)}</span>
+      <span class="m">${rud?`<span>${LV[x.lv]}</span>`:""}<span>${x.bpm} BPM</span><span>${x.ts||4}/4${x.r===3?" · triplets":""}</span><span>~${lessonMins(x)} min</span></span>${x.st?`<span class="m" style="font-family:ui-monospace,monospace;letter-spacing:1px">${esc(x.st[0].replace(/\./g,"·"))}</span>`:""}
+      <span class="dots">${lessonLanes(x).map(l=>`<i title="${L[l].n}" style="background:${L[l].c}"></i>`).join("")}</span>
+      <span class="f">${starHtml(b)}${mastered(x.id)?`<span class="done">✓ Mastered</span>`:b!=null?`<span class="mutey">best ${b}%</span>`:`<span class="mutey">new</span>`}</span></button>`;
+  }).join("");
+  return `<div class="hero">
+    <button class="tile big" data-act="next"><span class="k">Up next · ${LV[next.lv]}</span><span class="t">${esc(next.n)}</span><span class="d">${next.bpm} BPM · about ${lessonMins(next)} min</span><span class="go">Start</span></button>
+    <button class="tile" data-act="work"><span class="k">Daily workout</span><span class="t">${plan.length} lessons</span><span class="d">About ${wm} minutes, picked for your level</span><span class="go">Start</span></button>
+    <button class="tile" data-act="free"><span class="k">Free play</span><span class="t">Just a click</span><span class="d">Jam to a metronome at any tempo</span><span class="go">Open</span></button>
+  </div>
+  <div class="sect"><h3>Lessons</h3><span class="mutey">Your level: <b style="color:var(--ink)">${LV[lv]}</b></span></div>
+  <div class="lvls">${chips}</div>${rud?`<p class="sub" style="margin:0 2px 12px">Rudiments are the scales of drumming: short sticking patterns that build control. Follow the R and L sticking even when another way feels easier.</p>`:""}<div class="grid">${cards}</div>
+  <p class="mutey">Tap a lesson for its coach card and step-by-step practice plan. Three stars at 95%, two at 85%, one at 70%. A lesson is mastered at 85% or better at 90% tempo or faster.</p>`;
+}
+function homeMusic(){
+  const sc=allScores(),sn=Object.keys(sc).sort((a,b)=>(sc[b].at||0)-(sc[a].at||0));
+  const ch=jget("sw_charts",{}),cn=Object.keys(ch);
+  const hist=jget("sw_hist",{}),best=id=>{const h=hist[id];return h&&h.runs.length?Math.max(...h.runs.map(r=>r.acc)):null};
+  const scCards=sn.map((n,i)=>`<div class="lc" data-scp="${i}"><span class="strip" style="background:var(--accent)"></span><span class="n">${esc(n)}</span><span class="m"><span>${sc[n].bars.length} bars</span><span>${Math.round(sc[n].bpm||sc[n].bars[0].bpm||100)} BPM</span></span><span class="f">${starHtml(best("score:"+n))}</span><span class="acts"><span class="btn main" data-scp="${i}">Play</span><span class="btn" data-sce="${i}">Edit</span><span class="btn" data-scm="${i}">MIDI</span><span class="btn" data-scd="${i}">Delete</span></span></div>`).join("");
+  const chCards=cn.map((n,i)=>`<div class="lc" data-cho="${i}"><span class="strip" style="background:var(--gold)"></span><span class="n">${esc(n)}</span><span class="m"><span>${esc(ch[n].ts)}</span><span>${(String(ch[n].text).match(/\|/g)||[]).length?"chord chart":""}</span></span><span class="f">${starHtml(best("chart:"+n))}</span><span class="acts"><span class="btn main" data-cho="${i}">Play</span><span class="btn" data-che="${i}">Edit chords</span><span class="btn" data-chd="${i}">Delete</span></span></div>`).join("");
+  return `<div class="sect"><h2 class="hh" style="margin:0">My music</h2><button class="btn main" data-act="open">Open a file</button></div>
+  <p class="sub">MIDI, MuseScore (MusicXML), Guitar Pro or audio files. Everything you open is kept here.</p>
+  <div class="sect"><h3>Imported files</h3></div><div class="grid" id="songGrid"><div class="empty">Loading…</div></div>
+  <div class="sect"><h3>My scores</h3></div>${scCards?`<div class="grid">${scCards}</div>`:`<div class="empty">Scores you write or edit and save appear here. Go to Create, Write notation.</div>`}
+  <div class="sect"><h3>Chord charts</h3></div>${chCards?`<div class="grid">${chCards}</div>`:`<div class="empty">Saved chord charts appear here. Go to Create, Chords to drums.</div>`}`;
+}
+let songList=[];
+async function fillSongs(){
+  songList=(await listSongs()).sort((a,b)=>b.at-a.at);const g=$("songGrid");if(!g)return;
+  const hist=jget("sw_hist",{});
+  g.innerHTML=songList.length?songList.map((s,i)=>{const h=hist[s.id],b=h&&h.runs.length?Math.max(...h.runs.map(r=>r.acc)):null;
+    return `<div class="lc" data-so="${i}"><span class="strip" style="background:#4cc9f0"></span><span class="n">${esc(s.name)}</span><span class="m"><span>${new Date(s.at).toLocaleDateString(undefined,{day:"numeric",month:"short"})}</span></span><span class="f">${starHtml(b)}</span><span class="acts"><span class="btn main" data-so="${i}">Play</span><span class="btn" data-sd="${i}">Delete</span></span></div>`}).join("")
+    :`<div class="empty">Nothing yet. Tap Open a file to add a MIDI, score or audio file.</div>`;
+  wireHome();
+}
+function homeCreate(){
+  return `<h2 class="hh">Create</h2><p class="sub">Make your own drum parts to practise.</p>
+  <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
+    <button class="tile" data-act="write"><span class="k">Notation</span><span class="t">Write notation</span><span class="d">Write a groove bar by bar on a grid, or edit the song you last played.</span><span class="go">Open editor</span></button>
+    <button class="tile" data-act="chords"><span class="k">Chords</span><span class="t">Chords to drums</span><span class="d">Paste chords or sargam (Sa Re Ga) and pick a style. Stickwork writes the drums.</span><span class="go">Start</span></button>
+    <button class="tile" data-act="open"><span class="k">Import</span><span class="t">Open a file</span><span class="d">MIDI, MuseScore, Guitar Pro, mp3 or wav. Songs without drums become chord charts.</span><span class="go">Choose file</span></button>
+    <button class="tile" data-act="free"><span class="k">Jam</span><span class="t">Free play</span><span class="d">A click at any tempo and time signature, with no notes to follow.</span><span class="go">Open</span></button>
+  </div>`;
+}
+function homeProgress(){
+  showStats();
+  const t=jget("sw_time",{}),day=i=>t[dayKey(Date.now()-i*864e5)]||0;let week=0;for(let i=0;i<7;i++)week+=day(i);
+  let i=day(0)>=60?0:1,streak=0;while(i<400&&day(i)>=60){streak++;i++}
+  const hist=jget("sw_hist",{}),runs=[];
+  for(const id in hist)for(const r of hist[id].runs)runs.push({...r,name:hist[id].name});
+  runs.sort((a,b)=>b.d-a.d);
+  const lvRows=LV.map((n,i)=>{const arr=LES.filter(x=>x.lv===i),m=arr.filter(x=>mastered(x.id)).length;return `<div class="lvrow"><span>${n}</span><span class="bar2"><i style="width:${Math.round(m/arr.length*100)}%;background:${LVC[i]}"></i></span><span>${m} / ${arr.length}</span></div>`}).join("")
+    +(()=>{const m=RUD.filter(x=>mastered(x.id)).length;return `<div class="lvrow"><span>Rudiments</span><span class="bar2"><i style="width:${Math.round(m/RUD.length*100)}%;background:var(--gold)"></i></span><span>${m} / ${RUD.length}</span></div>`})();
+  return `<div class="sect"><h2 class="hh" style="margin:0">Progress</h2><button class="btn main" data-act="over">Calendar and review list</button></div>
+  <div class="stat3">
+    <div class="tile"><span class="k">Today</span><span class="v">${Math.round(day(0)/60)}</span><span class="d">minutes</span></div>
+    <div class="tile"><span class="k">This week</span><span class="v">${Math.round(week/60)}</span><span class="d">minutes</span></div>
+    <div class="tile"><span class="k">Streak</span><span class="v">${streak}</span><span class="d">day${streak===1?"":"s"} with 1+ minute</span></div>
+    <div class="tile"><span class="k">Level</span><span class="v" style="font-size:24px">${LV[myLevel()]}</span><span class="d">${LES.filter(x=>mastered(x.id)).length} of ${LES.length} lessons mastered</span></div>
+  </div>
+  <div class="sect"><h3>Lessons mastered by level</h3></div><div class="scard">${lvRows}</div>
+  <div class="sect"><h3>Recent runs</h3></div>
+  ${runs.length?`<div class="scard" style="overflow-x:auto"><table class="runs"><tr><th>Date</th><th>Song</th><th>Tempo</th><th>Accuracy</th><th>Missed</th></tr>${runs.slice(0,15).map(r=>`<tr><td>${new Date(r.d).toLocaleDateString(undefined,{day:"numeric",month:"short"})}</td><td>${esc(r.name)}${r.perf?" ★":""}</td><td>${r.tempo}%</td><td>${r.acc}%</td><td>${r.miss}</td></tr>`).join("")}</table></div>`:`<div class="empty">Finish a run in Play or Perform mode and it shows up here.</div>`}`;
+}
+function wireHome(){
+  const H=$("homeBody"),on=(sel,fn)=>H.querySelectorAll(sel).forEach(el=>el.onclick=e=>{e.stopPropagation();fn(el)});
+  on("[data-lv]",b=>{homeLv=b.dataset.lv==="r"?"r":+b.dataset.lv;renderHome("lessons")});
+  on("[data-les]",b=>showCoach(findLes(b.dataset.les)));
+  on("[data-act]",b=>{const a=b.dataset.act;
+    if(a==="next")showCoach(LES.find(x=>!mastered(x.id))||LES[0]);
+    else if(a==="work")showWorkout();else if(a==="free")showFree();else if(a==="write")showWrite();
+    else if(a==="chords")showChords();else if(a==="over")showOverview();else if(a==="open")$("mid").click();});
+  const sc=allScores(),sn=Object.keys(sc).sort((a,b)=>(sc[b].at||0)-(sc[a].at||0)),ch=jget("sw_charts",{}),cn=Object.keys(ch);
+  on("[data-scp]",b=>loadScore(sc[sn[+b.dataset.scp]],0));
+  on("[data-sce]",b=>openEditor(JSON.parse(JSON.stringify(sc[sn[+b.dataset.sce]])),0,false,true));
+  on("[data-scm]",b=>downloadMidi(sc[sn[+b.dataset.scm]]));
+  on("[data-scd]",b=>{const a=allScores();delete a[sn[+b.dataset.scd]];jset("sw_scores",a);renderHome("music")});
+  on("[data-cho]",b=>{const c=ch[cn[+b.dataset.cho]];jset("sw_chartlast",c);saKey=+c.sa||0;openChart(c)});
+  on("[data-che]",b=>showChords(ch[cn[+b.dataset.che]]));
+  on("[data-chd]",b=>{const a=jget("sw_charts",{});delete a[cn[+b.dataset.chd]];jset("sw_charts",a);renderHome("music")});
+  on("[data-so]",b=>{const s=songList[+b.dataset.so];$("mid").onchange({target:{files:[new File([s.buf],s.name)],value:""}})});
+  on("[data-sd]",async b=>{await delSong(songList[+b.dataset.sd].name);renderHome("music")});
+}
+
+/* modes: Listen, Learn (wait for me), Play, Perform */
+function syncModes(){
+  const m=perf?"perform":$("prac").checked?"learn":$("hear").checked?"listen":"play";
+  document.querySelectorAll("#modes button").forEach(b=>b.classList.toggle("on",b.dataset.m===m));
+}
+function setMode(m){
+  if(m==="perform"){if(!perf)setPerf(true);syncModes();return}
+  if(perf)setPerf(false);
+  const hear=m==="listen",prac=m==="learn";
+  if($("hear").checked!==hear){$("hear").checked=hear;$("hear").onchange({target:$("hear")})}
+  if($("prac").checked!==prac){$("prac").checked=prac;$("prac").onchange({target:$("prac")})}
+  if(!hear&&!prac)say("Play mode: hit the notes as they reach the line. You are scored.");
+  if(playing){pause();reset()}
+  syncModes();
+}
+document.querySelectorAll("#modes button").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+
+/* options sheet */
+function openSheet(){document.body.classList.add("sheet");$("padT").textContent="Pads: "+(padsShown()?"shown":"hidden");$("hwT").textContent="Notes: "+(hwDir==="across"?"across":"falling")}
+function closeSheet(){document.body.classList.remove("sheet")}
+$("moreB").onclick=openSheet;$("sheetX").onclick=closeSheet;$("sheetBg").onclick=closeSheet;
+
+/* pads and highway direction */
+function padsShown(){return padMode==="1"||(padMode==="auto"&&!kitOn)}
+function applyPads(){document.body.classList.toggle("nopads",!padsShown());$("padSel").value=padMode}
+$("padSel").onchange=e=>{padMode=e.target.value;try{localStorage.setItem("sw_pads",padMode)}catch(err){}applyPads()};
+$("padT").onclick=()=>{padMode=padsShown()?"0":"1";try{localStorage.setItem("sw_pads",padMode)}catch(err){}applyPads();openSheet()};
+function setHw(v){hwDir=v;try{localStorage.setItem("sw_hw",v)}catch(e){}$("hwSel").value=v}
+$("hwSel").value=hwDir;$("hwSel").onchange=e=>setHw(e.target.value);
+$("hwT").onclick=()=>{setHw(hwDir==="across"?"fall":"across");openSheet()};
+new MutationObserver(()=>{const on=/^Kit:/.test($("midi").textContent);if(on!==kitOn){kitOn=on;applyPads()}$("midi").classList.toggle("on",on)}).observe($("midi"),{childList:true,characterData:true,subtree:true});
+
+/* top bar and transport */
+$("tabs").onclick=e=>{const b=e.target.closest("[data-tab]");if(b){homeLv=null;renderHome(b.dataset.tab)}};
+$("backB").onclick=()=>goHome();
+$("tDn").onclick=()=>bump(Math.max(40,+$("tempo").value-5));
+$("tUp").onclick=()=>bump(Math.min(120,+$("tempo").value+5));
+$("audB").onclick=()=>$("aud").click();
+$("editB").onclick=()=>{closeSheet();showWrite()};
+
+/* open the play screen whenever something loads */
+{
+  const wrap=(fn,ok)=>function(...a){const r=fn.apply(this,a);if(ok?r:true)goPlayer();return r};
+  openLesson=wrap(openLesson);openFree=wrap(openFree);openChart=wrap(openChart,true);loadScore=wrap(loadScore,true);
+}
+
+/* notes moving across: lanes as rows, hit line on the left */
+function drawAcross(){
+  const W=cv.clientWidth,H=cv.clientHeight;if(!W||!H)return;
+  const LW=Math.min(104,Math.max(58,W*.1)),hx=Math.max(LW+30,W*.25),px=(W-hx)/(4*bd),n=ROWS.length,top=20,rh=(H-top)/n;
+  const X=t=>hx+(t-songTime)*px,rowOf=[];ROWS.forEach((l,r)=>rowOf[l]=r);
+  ctx.clearRect(0,0,W,H);
+  ROWS.forEach((l,r)=>{
+    const y=top+r*rh;
+    if(r%2){ctx.fillStyle=C.band;ctx.fillRect(0,y,W,rh)}
+    if(flash[l]>.02){ctx.globalAlpha=flash[l]*.4;ctx.fillStyle=L[l].c;ctx.fillRect(LW,y,W-LW,rh);ctx.globalAlpha=1;flash[l]*=.86}
+  });
+  /* beats and bar lines */
+  let bi0=0;{let lo=0,hi=beats.length;const t0=songTime-(hx-LW)/px;while(lo<hi){const m=(lo+hi)>>1;if(beats[m]<t0)lo=m+1;else hi=m}bi0=lo}
+  let barNo=0;
+  for(let i=bi0;i<beats.length;i++){
+    const x=X(beats[i]);if(x>W)break;const bar=isBarBeat(i);
+    ctx.strokeStyle=bar?C.ink:C.line;ctx.globalAlpha=bar?.35:.6;ctx.lineWidth=bar?2:1;
+    ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,H);ctx.stroke();ctx.globalAlpha=1;
+    if(bar){barNo=barOfT(beats[i]+1e-4)+1;ctx.fillStyle=C.mute;ctx.font='700 12px "Barlow Semi Condensed",system-ui,sans-serif';ctx.textAlign="left";ctx.fillText(String(barNo),x+4,14)}
+  }
+  if(silOK){
+    for(let k=Math.max(0,barIdx(Math.max(0,songTime-(hx-LW)/px)));k<10000;k++){
+      const t0=barStartT(k),t1=barStartT(k+1),x0=Math.max(LW,X(t0)),x1=Math.min(W,X(t1));
+      if(X(t0)>W||!(t1>t0))break;
+      if(!silentAt((t0+t1)/2)||x1<=x0)continue;
+      ctx.globalAlpha=.08;ctx.fillStyle=C.ink;ctx.fillRect(x0,top,x1-x0,H-top);
+      ctx.globalAlpha=.85;ctx.fillStyle=C.ink;ctx.font='700 13px "Barlow Semi Condensed",system-ui,sans-serif';ctx.textAlign="left";
+      if(x1-x0>90)ctx.fillText("Silent bar · keep time",x0+8,H-8);ctx.globalAlpha=1;
+    }
+  }
+  if(chordMarks.length){
+    ctx.font='700 14px "Barlow Semi Condensed",system-ui,sans-serif';ctx.textAlign="left";
+    for(const m of chordMarks){const x=X(m.t);if(x<LW-80)continue;if(x>W)break;const tx=(m.s?m.s.toUpperCase()+" · ":"")+m.n;ctx.fillStyle=C.stage;const w=ctx.measureText(tx).width+10;ctx.globalAlpha=.9;ctx.fillRect(x+2,top+2,w,18);ctx.globalAlpha=1;ctx.fillStyle=C.ink;ctx.fillText(tx,x+7,top+16)}
+  }
+  /* notes */
+  const nw=Math.max(14,Math.min(34,px*.11)),nh=Math.min(rh*.72,30);
+  for(const nt of notes){
+    const x=X(nt.t);if(x>W+nw)break;if(x<LW-nw||nt.r==="hit"||nt.r==="skip"||(silOK&&silentAt(nt.t)))continue;
+    const y=top+rowOf[nt.l]*rh+rh/2;
+    ctx.globalAlpha=nt.r==="miss"?.25:x<hx-2?.55:1;ctx.fillStyle=L[nt.l].c;
+    ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x-nw/2,y-nh/2,nw,nh,Math.min(8,nh/2));else ctx.rect(x-nw/2,y-nh/2,nw,nh);ctx.fill();
+    if(waiting&&!nt.j&&Math.abs(nt.t-songTime)<.001){ctx.strokeStyle=C.ink;ctx.lineWidth=3;ctx.stroke()}
+    if((stickOn||nt.hf)&&nt.h&&nh>=14){ctx.fillStyle="#14151d";ctx.font="700 11px sans-serif";ctx.textAlign="center";ctx.fillText(nt.h,x,y+4)}
+    ctx.globalAlpha=1;
+  }
+  for(const [lt,lb] of [[loopA,"A"],[loopB,"B"]]){
+    if(lt==null)continue;const x=X(lt);if(x<LW||x>W)continue;
+    ctx.strokeStyle=C.ink;ctx.globalAlpha=loopOn?.8:.4;ctx.lineWidth=2;ctx.setLineDash([8,6]);ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,H);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+    ctx.fillStyle=C.ink;ctx.font='700 13px "Barlow Semi Condensed",system-ui,sans-serif';ctx.textAlign="left";ctx.fillText(lb,x+4,H-6);
+  }
+  /* lane labels */
+  ctx.fillStyle=C.stage;ctx.fillRect(0,0,LW,H);
+  ROWS.forEach((l,r)=>{const y=top+r*rh;ctx.fillStyle=L[l].c;ctx.globalAlpha=flash[l]>.05?1:.85;
+    ctx.beginPath();if(ctx.roundRect)ctx.roundRect(6,y+3,LW-12,rh-6,7);else ctx.rect(6,y+3,LW-12,rh-6);ctx.fill();ctx.globalAlpha=1;
+    ctx.fillStyle="#14151d";ctx.font='700 '+Math.max(10,Math.min(14,Math.floor(rh*.42)))+'px "Barlow Semi Condensed",system-ui,sans-serif';ctx.textAlign="center";
+    ctx.fillText(LW<80?SHORT[l]:L[l].n,LW/2,y+rh/2+4)});
+  /* hit line */
+  ctx.strokeStyle=C.hit;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(hx,top);ctx.lineTo(hx,H);ctx.stroke();
+  const nowF=performance.now();
+  for(let q=fbs.length-1;q>=0;q--){
+    const f=fbs[q],a=1-(nowF-f.t)/800;if(a<=0){fbs.splice(q,1);continue}
+    const y=top+rowOf[f.l]*rh+rh/2+5,x=hx+16+(1-a)*18;
+    ctx.globalAlpha=a;ctx.font='700 15px "Barlow Semi Condensed",system-ui,sans-serif';ctx.textAlign="left";
+    ctx.lineWidth=4;ctx.strokeStyle=C.stage;ctx.strokeText(f.s,x,y);ctx.fillStyle=f.c;ctx.fillText(f.s,x,y);ctx.globalAlpha=1;
+  }
+  if(playing&&silOK&&songTime>=0&&songTime>=gapEnd&&silentAt(songTime)){
+    ctx.globalAlpha=.9;ctx.fillStyle=C.ink;ctx.font='700 40px "Barlow Semi Condensed",system-ui,sans-serif';ctx.textAlign="center";
+    ctx.fillText("Keep time",(hx+W)/2,H*.4);ctx.font='600 15px "Barlow Semi Condensed",system-ui,sans-serif';ctx.fillText("the click is off, count it in your head",(hx+W)/2,H*.4+24);ctx.globalAlpha=1;
+  }
+  if(playing&&(songTime<0||songTime<gapEnd)){
+    ctx.fillStyle=C.ink;ctx.font='700 64px "Barlow Semi Condensed",system-ui,sans-serif';ctx.textAlign="center";
+    ctx.fillText(Math.ceil((songTime<gapEnd?gapEnd-songTime:-songTime)/bd-1e-6),(hx+W)/2,H*.55);
+  }
+}
+
+addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("sheet"))closeSheet()});
+applyPads();
+renderHome("lessons");
+
 songTime=-2;resize();requestAnimationFrame(frame);
 </script>
 <script>
-const APP_VERSION="1.12.0";
+const APP_VERSION="1.13.0";
 document.getElementById("ver").textContent="v"+APP_VERSION;
 try{
   const prev=localStorage.getItem("sw_ver");
