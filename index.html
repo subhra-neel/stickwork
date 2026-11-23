@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<!-- Stickwork v1.13.0 -->
+<!-- Stickwork v1.14.0 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Stickwork – drum practice</title>
@@ -1020,8 +1020,8 @@ function showOverview(){
   const mins=x=>Math.round(x/60),hrs=x=>x>=3600?(x/3600).toFixed(1)+" h":mins(x)+" min";
   const kpi=`<div class="kpis"><div><b>${mins(wk)}</b><span>min this week${lw?` (last week ${mins(lw)})`:""}</span></div><div><b>${streak}</b><span>day streak · best ${best}</span></div><div><b>${hrs(tot)}</b><span>practised in all</span></div></div>`;
   const bar=(lab,a,arr)=>{const m=arr.filter(x=>mastered(x.id)).length;return`<div class="mrow"><b>${lab}</b><span>${m} of ${arr.length} mastered</span></div><div class="mbar"><i style="width:${Math.round(m/arr.length*100)}%"></i></div>`};
-  const mast=LV.map((n,k)=>bar(n,k,LES.filter(x=>x.lv===k))).join("")+bar("Rudiments",0,RUD);
-  const all=[...LES,...RUD],now=Date.now();
+  const mast=LV.map((n,k)=>bar(n,k,LES.filter(x=>x.lv===k))).join("")+bar("Rudiments",0,RUD)+bar("Drills",0,DRL);
+  const all=[...LES,...RUD,...DRL],now=Date.now();
   const near=all.filter(x=>!mastered(x.id)).map(x=>{const r=lessonRuns(x.id);if(!r.length)return null;let b=0,why="";r.forEach(q=>{const v=Math.min(q.acc/85,1)*.5+Math.min(q.tempo/90,1)*.5;if(v>b){b=v;why=`best ${q.acc}% at ${q.tempo}% tempo`}});return{x,b,why}}).filter(Boolean).sort((a,b)=>b.b-a.b).slice(0,3);
   const due=all.filter(x=>mastered(x.id)).map(x=>{const r=lessonRuns(x.id),d=Math.floor((now-Math.max(...r.map(q=>q.d)))/864e5);return{x,d}}).filter(o=>o.d>=14).sort((a,b)=>b.d-a.d).slice(0,3);
   const lrow=(o,txt)=>`<div class="srow"><button class="btn" data-id="${o.x.id}">${esc(o.x.n)}</button><span>${txt}</span></div>`;
@@ -1077,30 +1077,47 @@ const G8={H:"x.x.x.x.x.x.x.x.",K:"x.......x.......",S:"....x.......x..."};
 const CR={C:"x..............."};
 const LES=[
 {id:"b1",lv:0,n:"Hi-hat on every beat",bpm:70,rep:8,bars:[{H:"x...x...x...x..."}]},
+{id:"b7",lv:0,n:"Eighth-note hi-hat",bpm:70,rep:8,bars:[{H:G8.H}]},
 {id:"b2",lv:0,n:"Kick on 1 and 3",bpm:70,rep:8,bars:[{H:"x...x...x...x...",K:"x.......x......."}]},
+{id:"b6",lv:0,n:"Kick and snare only",bpm:70,rep:8,bars:[{K:G8.K,S:G8.S}]},
 {id:"b3",lv:0,n:"Kick and snare backbeat",bpm:70,rep:8,bars:[{H:"x...x...x...x...",K:G8.K,S:G8.S}]},
+{id:"b8",lv:0,n:"Hi-hat and snare, hands only",bpm:70,rep:8,bars:[{H:G8.H,S:G8.S}]},
 {id:"b4",lv:0,n:"Basic rock beat",bpm:75,rep:8,bars:[G8]},
+{id:"b9",lv:0,n:"Crash and kick on beat 1",bpm:75,rep:2,bars:[{...G8,...CR,H:"..x.x.x.x.x.x.x."},G8,G8,G8]},
 {id:"b5",lv:0,n:"Four on the floor",bpm:80,rep:8,bars:[{H:G8.H,K:"x...x...x...x...",S:G8.S}]},
 {id:"e1",lv:1,n:"Rock beat with a busier kick",bpm:80,rep:8,bars:[{...G8,K:"x.......x.x....."}]},
 {id:"e2",lv:1,n:"Open hi-hat accent",bpm:80,rep:8,bars:[{H:"x.x.x.x.x.x.x...",O:"..............x.",K:G8.K,S:G8.S}]},
 {id:"e3",lv:1,n:"Ride cymbal groove",bpm:85,rep:8,bars:[{Y:G8.H,K:G8.K,S:G8.S}]},
+{id:"e8",lv:1,n:"Floor-tom groove",bpm:80,rep:8,bars:[{"3":G8.H,K:G8.K,S:G8.S}]},
 {id:"e4",lv:1,n:"Cross-stick groove",bpm:80,rep:8,bars:[{H:G8.H,K:G8.K,R:G8.S}]},
+{id:"e10",lv:1,n:"Two-bar phrase",bpm:80,rep:4,bars:[G8,{...G8,K:"x.......x.x...x."}]},
+{id:"e9",lv:1,n:"Quarter-note tom fill",bpm:80,rep:4,bars:[{...G8,...CR},G8,G8,{S:"x...","1":"....x...","2":"........x...","3":"............x..."}]},
 {id:"e5",lv:1,n:"Groove with a snare fill",bpm:80,rep:4,bars:[{...G8,...CR},G8,G8,{H:"x.x.x.x.",K:"x.......",S:"........x.x.x.x."}]},
+{id:"e11",lv:1,n:"Hits and rests",bpm:80,rep:4,bars:[G8,G8,G8,{C:"x...............",K:"x..............."}]},
 {id:"i1",lv:2,n:"Sixteenth-note hi-hat groove",bpm:80,rep:8,bars:[{...G8,H:"xxxxxxxxxxxxxxxx"}]},
+{id:"i12",lv:2,n:"Two-handed sixteenth hi-hat",bpm:75,rep:8,bars:[{H:"xxxx.xxxxxxx.xxx",K:G8.K,S:"....x.......x..."}],st:["RLRLRLRLRLRLRLRL"]},
 {id:"i2",lv:2,n:"Funk groove",bpm:85,rep:8,bars:[{H:"xxxxxxxxxxxxxxxx",K:"x..x..x.",S:G8.S}]},
+{id:"i13",lv:2,n:"Ghost-note groove",bpm:80,rep:8,bars:[{H:G8.H,K:"x.......x.x.....",S:"....x..x.x..x..x"}]},
 {id:"i3",lv:2,n:"Shuffle (triplet feel)",bpm:90,r:3,rep:8,bars:[{H:"x.xx.xx.xx.x",K:"x.....x.....",S:"...x.....x.."}]},
+{id:"i15",lv:2,n:"12/8 blues ballad",bpm:60,r:3,rep:8,bars:[{H:"xxxxxxxxxxxx",K:"x.....x.x...",S:"...x.....x.."}]},
 {id:"i4",lv:2,n:"Single-stroke roll on the snare",bpm:70,rep:8,bars:[{S:"xxxxxxxxxxxxxxxx"}]},
+{id:"i11",lv:2,n:"Sixteenth-note snare fill",bpm:80,rep:4,bars:[{...G8,...CR},G8,G8,{H:"x.x.x.x.",K:"x.......",S:"........xxxxxxxx"}]},
 {id:"i5",lv:2,n:"Groove with a tom fill",bpm:80,rep:4,bars:[{...G8,...CR},G8,G8,{H:"x.x.x.x.",K:"x.......",S:"........x.......","1":"..........x.....","2":"............x...","3":"..............x."}]},
+{id:"i14",lv:2,n:"Triplet tom fill",bpm:80,r:3,rep:4,bars:[{H:"x..x..x..x..",K:"x.....x.....",S:"...x.....x..",C:"x..........."},{H:"x..x..x..x..",K:"x.....x.....",S:"...x.....x.."},{H:"x..x..x..x..",K:"x.....x.....",S:"...x.....x.."},{S:"xxx","1":"...xxx","2":"......xxx","3":".........xxx"}]},
 {id:"i6",lv:2,n:"Half-time groove",bpm:80,rep:8,bars:[{H:G8.H,K:"x.........x.....",S:"........x......."}]},
 {id:"i7",lv:2,n:"Waltz in 3/4",bpm:90,ts:3,rep:8,bars:[{H:"x.x.x.x.x.x.",K:"x...........",S:"....x...x..."}]},
 {id:"a1",lv:3,n:"Syncopated funk kick",bpm:85,rep:8,bars:[{H:"xxxxxxxxxxxxxxxx",K:"x.x...x..x.x....",S:"....x.......x..x"}]},
 {id:"a2",lv:3,n:"Linear groove",bpm:80,rep:8,bars:[{K:"x.....x..x......",S:"...x......x..x..",H:".xx.xx.xx..xx.xx"}]},
+{id:"a12",lv:3,n:"Band hits",bpm:85,rep:4,bars:[{C:"x.....x.........",K:"x.....x........."},G8]},
 {id:"a3",lv:3,n:"Double kick with a rock backbeat",bpm:80,rep:8,bars:[{H:G8.H,K:"x.xx....x.xx....",S:G8.S}]},
 {id:"a4",lv:3,n:"Groove in 5/4",bpm:85,ts:5,rep:8,bars:[{H:"x.x.x.x.x.x.x.x.x.x.",K:"x.......x.x.",S:"....x.......x......."}]},
 {id:"a5",lv:3,n:"Sixteenth-note tom run",bpm:80,rep:4,bars:[{...G8,...CR},G8,G8,{H:"x.x.x.x.",K:"x.......",S:"........xx......","1":"..........xx....","2":"............xx..","3":"..............xx"}]},
+{id:"a11",lv:3,n:"Four-per-drum sixteenth fill",bpm:80,rep:4,bars:[{...G8,...CR},G8,G8,{S:"xxxx","1":"....xxxx","2":"........xxxx","3":"............xxxx"}]},
 {id:"x1",lv:4,n:"Fast single strokes",bpm:100,rep:8,bars:[{S:"xxxxxxxxxxxxxxxx"}]},
+{id:"x9",lv:4,n:"Double-time punk beat",bpm:95,rep:8,bars:[{H:G8.H,K:"x...x...x...x...",S:"..x...x...x...x."}]},
 {id:"x2",lv:4,n:"Blast beat build-up",bpm:90,rep:8,bars:[{Y:"xxxxxxxxxxxxxxxx",K:G8.H,S:".x.x.x.x.x.x.x.x"}]},
 {id:"x3",lv:4,n:"Hat and open-hat 16th groove",bpm:85,rep:8,bars:[{H:"xxx.xxx.xxx.xxx.",O:"...x...x...x...x",K:"x..x..x...x.....",S:"....x.......x..x"}]},
+{id:"x10",lv:4,n:"3-3-2 groove",bpm:85,rep:8,bars:[{H:G8.H,K:"x..x..x.x..x..x.",S:"....x.......x..."}]},
 {id:"x4",lv:4,n:"Groove in 7/4",bpm:80,ts:7,rep:6,bars:[{H:"x.x.x.x.x.x.x.x.x.x.x.x.x.x.",K:"x.......x.x.....x.......",S:"....x.......x.......x..."}]},
 {id:"e6",lv:1,n:"Disco beat with open hi-hat",bpm:90,rep:8,bars:[{H:"x...x...x...x...",O:"..x...x...x...x.",K:"x...x...x...x...",S:G8.S}]},
 {id:"e7",lv:1,n:"Reggae one-drop",bpm:70,rep:8,bars:[{H:G8.H,K:"........x.......",R:"........x......."}]},
@@ -1109,10 +1126,13 @@ const LES=[
 {id:"i10",lv:2,n:"Slow shuffle on the ride",bpm:70,r:3,rep:8,bars:[{Y:"x.xx.xx.xx.x",K:"x.....x.....",S:"...x.....x.."}]},
 {id:"a6",lv:3,n:"Hi-hat foot on 2 and 4",bpm:80,rep:8,bars:[{Y:G8.H,K:"x.......x.x.....",S:G8.S,P:"....x.......x..."}]},
 {id:"a7",lv:3,n:"Gallop kick groove",bpm:90,rep:8,bars:[{H:"x...x...x...x...",K:"x.xxx.xxx.xxx.xx",S:G8.S}]},
+{id:"a9",lv:3,n:"Samba feel",bpm:90,rep:8,bars:[{H:G8.H,K:"x..xx..xx..xx..x",R:"...x..x...x..x.."}]},
+{id:"a10",lv:3,n:"Tribal tom groove",bpm:85,rep:8,bars:[{"3":G8.H,"1":"....x.......x...",K:"x..x..x...x..x.."}]},
 {id:"a8",lv:3,n:"Half-time shuffle",bpm:80,r:3,rep:8,bars:[{H:"x.xx.xx.xx.x",K:"x.........x.",S:"......x....."}]},
 {id:"x6",lv:4,n:"Four-limb groove with ride and hat foot",bpm:80,rep:8,bars:[{Y:"xxxxxxxxxxxxxxxx",K:"x..x..x...x..x..",S:G8.S,P:"....x.......x..."}]},
 {id:"x7",lv:4,n:"Seven-eight groove",bpm:100,ts:7,r:2,rep:8,bars:[{H:"x.x.x.x.x.x.x.",K:"x.....x.x.....",S:"....x.....x..."}]},
-{id:"x5",lv:4,n:"Full-kit fill",bpm:80,rep:4,bars:[{...G8,...CR},G8,G8,{S:"xxxx............","1":"....xxxx........","2":"........xx......","3":"..........xx....","4":"............xx..",K:"..............xx"}]}
+{id:"x5",lv:4,n:"Full-kit fill",bpm:80,rep:4,bars:[{...G8,...CR},G8,G8,{S:"xxxx............","1":"....xxxx........","2":"........xx......","3":"..........xx....","4":"............xx..",K:"..............xx"}]},
+{id:"x8",lv:4,n:"Linear sixteenth fill",bpm:80,rep:4,bars:[{...G8,...CR},G8,G8,{S:"xx.xx.xx.xx.xx.x",K:"..x..x..x..x..x."}],st:["","","","RL.RL.RL.RL.RL.R"]}
 ];
 /* rudiments (v1.12): st gives the sticking for each slot of the bar */
 const RUD=[
@@ -1120,13 +1140,34 @@ const RUD=[
 {id:"r2",rud:1,lv:0,n:"Double strokes",bpm:70,rep:8,bars:[{S:"x.x.x.x.x.x.x.x."}],st:["R.R.L.L.R.R.L.L."]},
 {id:"r3",rud:1,lv:1,n:"Single paradiddle",bpm:60,rep:8,bars:[{S:"xxxxxxxxxxxxxxxx"}],st:["RLRRLRLLRLRRLRLL"]},
 {id:"r4",rud:1,lv:1,n:"Triplet singles",bpm:65,r:3,rep:8,bars:[{S:"xxxxxxxxxxxx"}],st:["RLRLRLRLRLRL"]},
+{id:"r9",rud:1,lv:1,n:"Triple strokes",bpm:60,r:3,rep:8,bars:[{S:"xxxxxxxxxxxx"}],st:["RRRLLLRRRLLL"]},
 {id:"r5",rud:1,lv:2,n:"Paradiddle-diddle",bpm:60,r:3,rep:8,bars:[{S:"xxxxxxxxxxxx"}],st:["RLRRLLRLRRLL"]},
 {id:"r6",rud:1,lv:2,n:"Five-stroke roll",bpm:60,rep:8,bars:[{S:"xxxxx...xxxxx..."}],st:["RRLLR...LLRRL..."]},
 {id:"r7",rud:1,lv:2,n:"Double paradiddle",bpm:60,r:3,rep:8,bars:[{S:"xxxxxxxxxxxx"}],st:["RLRLRRLRLRLL"]},
-{id:"r8",rud:1,lv:3,n:"Paradiddle groove",bpm:70,rep:8,bars:[{H:"x.xx.x..x.xx.x..",S:".x..x.xx.x..x.xx",K:"x.......x......."}],st:["RLRRLRLLRLRRLRLL"]}
+{id:"r10",rud:1,lv:2,n:"Inverted paradiddle",bpm:60,rep:8,bars:[{S:"xxxxxxxxxxxxxxxx"}],st:["RLLRLRRLRLLRLRRL"]},
+{id:"r11",rud:1,lv:2,n:"Six-stroke roll",bpm:60,r:3,rep:8,bars:[{S:"xxxxxxxxxxxx"}],st:["RLLRRLRLLRRL"]},
+{id:"r8",rud:1,lv:3,n:"Paradiddle groove",bpm:70,rep:8,bars:[{H:"x.xx.x..x.xx.x..",S:".x..x.xx.x..x.xx",K:"x.......x......."}],st:["RLRRLRLLRLRRLRLL"]},
+{id:"r12",rud:1,lv:3,n:"Triple paradiddle",bpm:60,rep:8,bars:[{S:"xxxxxxxxxxxxxxxx"}],st:["RLRLRLRRLRLRLRLL"]},
+{id:"r13",rud:1,lv:3,n:"Paradiddle between snare and tom",bpm:60,rep:8,bars:[{"1":"x.xx..x.x.xx..x.",S:".x..xx.x.x..xx.x"}],st:["RLRRLRLLRLRRLRLL"]}
 ];
-const findLes=id=>LES.find(x=>x.id===id)||RUD.find(x=>x.id===id);
-const lvName=x=>x.rud?"Rudiment":LV[x.lv];
+/* drills (v1.14): short exercises for timing, independence, moving round the kit and speed */
+const DRL=[
+{id:"d1",drl:1,lv:0,n:"Subdivision ladder",bpm:60,r:12,rep:2,bars:[{S:"x...........x...........x...........x..........."},{S:"x.....x.....x.....x.....x.....x.....x.....x....."},{S:"x...x...x...x...x...x...x...x...x...x...x...x..."},{S:"x..x..x..x..x..x..x..x..x..x..x..x..x..x..x..x.."}],st:["R...........L...........R...........L...........","R.....L.....R.....L.....R.....L.....R.....L.....","R...L...R...L...R...L...R...L...R...L...R...L...","R..L..R..L..R..L..R..L..R..L..R..L..R..L..R..L.."]},
+{id:"d2",drl:1,lv:0,n:"Play and rest",bpm:70,rep:4,bars:[{S:"x...x...x...x..."},{S:"x..............."}],st:["R...L...R...L...","R..............."]},
+{id:"d3",drl:1,lv:0,n:"Hand and foot together",bpm:70,rep:8,bars:[{H:"x...x...x...x...",K:"x...x...x...x..."}]},
+{id:"d4",drl:1,lv:1,n:"Kick eighth notes",bpm:70,rep:8,bars:[{H:"x...x...x...x...",K:G8.H}]},
+{id:"d5",drl:1,lv:1,n:"Crash on every 1",bpm:75,rep:8,bars:[{...G8,...CR,H:"..x.x.x.x.x.x.x."}]},
+{id:"d6",drl:1,lv:1,n:"Eighths around the kit",bpm:70,rep:8,bars:[{S:"x.x.............","1":"....x.x.........","2":"........x.x.....","3":"............x.x."}],st:["R.L.R.L.R.L.R.L."]},
+{id:"d7",drl:1,lv:2,n:"Sixteenths around the kit",bpm:65,rep:8,bars:[{S:"xxxx","1":"....xxxx","2":"........xxxx","3":"............xxxx"}],st:["RLRLRLRLRLRLRLRL"]},
+{id:"d8",drl:1,lv:2,n:"Hi-hat foot keeps time",bpm:75,rep:8,bars:[{Y:G8.H,P:"x...x...x...x..."}]},
+{id:"d9",drl:1,lv:2,n:"Jazz ride pattern",bpm:100,r:3,rep:8,bars:[{Y:"x..x.xx..x.x",P:"...x.....x.."}]},
+{id:"d10",drl:1,lv:3,n:"Jazz ride with snare comping",bpm:100,r:3,rep:4,bars:[{Y:"x..x.xx..x.x",P:"...x.....x..",S:"..x........."},{Y:"x..x.xx..x.x",P:"...x.....x..",S:"........x..."},{Y:"x..x.xx..x.x",P:"...x.....x..",S:"..x.....x..."},{Y:"x..x.xx..x.x",P:"...x.....x..",S:"...........x"}]},
+{id:"d11",drl:1,lv:3,n:"Kick independence ladder",bpm:80,rep:4,bars:[{H:G8.H,S:G8.S,K:"x.......x......."},{H:G8.H,S:G8.S,K:"x.......x.x....."},{H:G8.H,S:G8.S,K:"x.x.....x.x....."},{H:G8.H,S:G8.S,K:"x.x...x.x.x...x."}]},
+{id:"d12",drl:1,lv:4,n:"Speed bursts",bpm:90,rep:4,bars:[{S:G8.H},{S:G8.H},{S:"xxxxxxxxxxxxxxxx"},{S:"xxxxxxxxxxxxxxxx"}],st:["R.L.R.L.R.L.R.L.","R.L.R.L.R.L.R.L.","RLRLRLRLRLRLRLRL","RLRLRLRLRLRLRLRL"]},
+{id:"d13",drl:1,lv:4,n:"Subdivision pyramid",bpm:70,r:12,rep:1,bars:[{S:"x...........x...........x...........x...........",K:"x...........x...........x...........x..........."},{S:"x.....x.....x.....x.....x.....x.....x.....x.....",K:"x...........x...........x...........x..........."},{S:"x...x...x...x...x...x...x...x...x...x...x...x...",K:"x...........x...........x...........x..........."},{S:"x..x..x..x..x..x..x..x..x..x..x..x..x..x..x..x..",K:"x...........x...........x...........x..........."},{S:"x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.",K:"x...........x...........x...........x..........."},{S:"x..x..x..x..x..x..x..x..x..x..x..x..x..x..x..x..",K:"x...........x...........x...........x..........."},{S:"x...x...x...x...x...x...x...x...x...x...x...x...",K:"x...........x...........x...........x..........."},{S:"x.....x.....x.....x.....x.....x.....x.....x.....",K:"x...........x...........x...........x..........."}],st:["R...........L...........R...........L...........","R.....L.....R.....L.....R.....L.....R.....L.....","R...L...R...L...R...L...R...L...R...L...R...L...","R..L..R..L..R..L..R..L..R..L..R..L..R..L..R..L..","R.L.R.L.R.L.R.L.R.L.R.L.R.L.R.L.R.L.R.L.R.L.R.L.","R..L..R..L..R..L..R..L..R..L..R..L..R..L..R..L..","R...L...R...L...R...L...R...L...R...L...R...L...","R.....L.....R.....L.....R.....L.....R.....L....."]}
+];
+const findLes=id=>LES.find(x=>x.id===id)||RUD.find(x=>x.id===id)||DRL.find(x=>x.id===id);
+const lvName=x=>x.rud?"Rudiment":x.drl?"Drill":LV[x.lv];
 const lesPads=x=>[...new Set(x.bars.flatMap(b=>Object.keys(b)).map(k=>L[LK[k]].n))];
 /* what each lesson is, in everyday terms (v1.12) */
 const GUIDE={
@@ -1174,7 +1215,45 @@ r4:"Three notes per beat: “1-trip-let, 2-trip-let”. Because three is odd, th
 r5:"R L R R L L: one single pair, then two doubles. It rolls like a wheel and is great for tom fills later.",
 r6:"R R L L R: two doubles, then a single that lands like a full stop. A short roll that ends on the other hand next time.",
 r7:"R L R L R R: two singles before the double. Count “1-trip-let, 2-trip-let”; the double falls on the last two notes.",
-r8:"Your paradiddle spread across the kit: right hand on the hat, left hand on the snare, kick on 1 and 3. The left-hand notes on 2 and 4 are the backbeat; the rest are quiet ghost notes. A rudiment turned into music."
+r8:"Your paradiddle spread across the kit: right hand on the hat, left hand on the snare, kick on 1 and 3. The left-hand notes on 2 and 4 are the backbeat; the rest are quiet ghost notes. A rudiment turned into music.",
+b7:"Two ticks per beat now: “1 and 2 and”. Think of a clock that ticks twice as fast. Say the “and” out loud so it sits exactly halfway between the beats.",
+b6:"Just the heartbeat: foot on 1 and 3, hand on 2 and 4, “boom, tak, boom, tak”. Like walking, left then right. Get this solid before the hi-hat joins in.",
+b8:"Both hands, no feet. Your right hand ticks eighths on the hat while your left hand drops in on 2 and 4, like one person keeping time and another clapping along. Hat and snare on beat 2 should land as one sound.",
+b9:"Every four bars the right hand moves from the hat to the crash on beat 1, with the kick underneath, like the opening bell of a new round. Hit crash and kick together, then go straight back to the hat.",
+e8:"The same rock beat, but the right hand plays the floor tom instead of the hi-hat. It turns a tick-tock into a rumbling drum circle. Keep the floor-tom notes even, like a steady march.",
+e10:"Bar 1 is the plain rock beat, bar 2 adds two kicks, like a question and its answer. Count the bars as well as the beats: “ONE 2 3 4, TWO 2 3 4”.",
+e9:"Your first fill: one hit per beat on snare, tom 1, tom 2, floor tom, like four big steps down a staircase. Slow and wide. Then land on the crash on 1.",
+e11:"Three bars of groove, then one big crash-and-kick hit and three beats of silence, like a band stopping together. The silence is part of the music: keep counting through it and come back in exactly on 1.",
+i12:"Sixteenths with both hands on the hat, right-left like walking fast. On 2 and 4 the right hand jumps to the snare and straight back. It feels like two people sharing one job.",
+i13:"The extra snare notes are ghost notes: whispers between the loud backbeats on 2 and 4. Play them with the stick only an inch above the drum. The app scores timing, so the soft notes still count.",
+i15:"Every beat splits into three, like rocking a cradle: “1-2-3, 2-2-3”. The hat plays every triplet; the snare lands heavy on 2 and 4. Slow and deep, like a blues song.",
+i11:"Two beats of groove, then two beats of sixteenths on the snare, like a drum roll before an announcement. Keep the fill the same speed as the hat; don't rush into the crash.",
+i14:"Three notes per beat on each drum: snare, tom 1, tom 2, floor tom. Say “tri-pl-et” for each drum, like a ball bouncing three times on each step of the stairs.",
+a9:"In samba the kick is the surdo, the big carnival drum: “boom, ba-boom, ba-boom”. Keep the foot light and bouncy while the rim plays a little rhythm on top, like dancers moving in a street parade.",
+a10:"No cymbals: floor tom eighths, the high tom on 2 and 4, and a busy kick underneath. It sounds like a drum circle around a fire. Let the toms ring.",
+a12:"Bar 1 is two hits with the band, on 1 and on the “and” of 2, then silence. Bar 2 is the groove. Like a horn section stabbing a chord: crash and kick together, both times, then count back in.",
+a11:"One beat on each drum, four sixteenths per drum, round the kit from high to low. Like running down four flights of stairs, four steps per flight. Arrive on the crash exactly on 1.",
+x9:"The snare moves to every “and”, so the beat feels twice as fast: “boom-tak, boom-tak”. It's a sprint, so stay loose. Tension is what slows you down.",
+x10:"The kick groups the eighths 3 + 3 + 2, like “one-two-three, one-two-three, one-two”. You hear it in Latin and pop music. The snare stays on 2 and 4 while the kick limps in threes.",
+x8:"Right, left, kick, over and over: three-note groups laid across four-note beats, so the pattern drifts against the count like a song in a round. Never two limbs at once. Say “R L K” as you play.",
+r9:"Three strokes per hand, one hand per beat: “R R R, L L L”. Like dribbling a ball three times before passing it to the other hand. Keep all three strokes the same height.",
+r10:"A paradiddle with the double moved to the middle: R L L R, L R R L. Same ingredients, different recipe. Say it slowly while you play.",
+r11:"R, L L, R R, L: a single, two doubles, a single, like bookends holding up two books. Played in triplets it rolls round and round.",
+r12:"Six singles then a double: R L R L R L R R. A long run-up before the jump, then the other hand leads. One rudiment fills exactly one bar of sixteenths.",
+r13:"Your paradiddle with the right hand on tom 1 and the left on the snare. The sticking turns into a melody between two drums. Watch the right hand cross back and forth.",
+d1:"One bar each of quarters, eighths, triplets and sixteenths: 1, 2, 3, then 4 notes per beat, like shifting up through a car's gears. The beat never changes speed, only how many notes fit in it. Count out loud: “1”, “1 and”, “1-trip-let”, “1 e and a”.",
+d2:"One bar of four notes, one bar with a single note on 1. The empty beats are a pause in a sentence: the time keeps moving even when you don't play. Nod your head through the rests.",
+d3:"Hat and kick on every beat at exactly the same moment, like clapping and stamping together so they sound like one. If you hear two separate clicks, one limb is early.",
+d4:"The kick plays every eighth note, twice per beat, like pedalling a bicycle. Play from the ankle, keep the foot light, and let the beater bounce back off the head.",
+d5:"Every bar starts on the crash with the kick, then the hand goes back to the hat, like ringing a bell at the start of each line of a song. Move early so you aren't late to beat 2.",
+d6:"Two notes on each drum, high to low, alternating hands, like walking down a hallway knocking on each door twice. Look ahead to the next drum before you get there.",
+d7:"Four notes per drum, round the kit. Lead with the right hand on every new drum. It's the same walk as before, now at a jog.",
+d8:"Your left foot closes the hi-hat on every beat while your right hand rides eighths, like tapping your foot to a song while you drum. It sounds like a soft “chick”. Both on beat 1 should land together.",
+d9:"The classic jazz ride, “ding, ding-a-ding, ding-a-ding”, with the hi-hat foot on 2 and 4. It swings like a rocking chair: long-short, long-short.",
+d10:"Keep the ride and hat foot going and drop single snare notes in different places each bar. Jazz drummers call this comping: short replies in a conversation. The ride never stops.",
+d11:"Hat and snare stay the same while the kick gets busier every bar, like adding one more step to a dance each time. If a bar falls apart, loop just that bar slower.",
+d12:"Two bars of eighths, then two of sixteenths at the same tempo: cruise, then sprint, then cruise. Stay relaxed in the fast bars. Speed comes from loose wrists, not from squeezing the sticks.",
+d13:"Up the ladder and back down: 1, 2, 3, 4, 6, 4, 3, 2 notes per beat, with the kick on every beat as your anchor. Like changing gears up and down without the engine changing speed."
 };
 
 function openLesson(les,mul=1,keep){
@@ -1215,18 +1294,20 @@ function bk(x,at){
 const lessonRuns=id=>{const h=jget("sw_hist",{})["lesson:"+id];return h?h.runs:[]};
 const mastered=id=>lessonRuns(id).some(r=>r.acc>=85&&r.tempo>=90);
 const bestOf=id=>{const r=lessonRuns(id);return r.length?Math.max(...r.map(x=>x.acc)):null};
+/* lessons needed per level before v1.14 added more, so new lessons never make levelling up harder */
+const LVNEED=[3,5,6,5,5];
 function myLevel(){
   let lv=0;
   for(let i=0;i<LV.length;i++){
     const arr=LES.filter(x=>x.lv===i);
-    if(arr.filter(x=>mastered(x.id)).length>=Math.ceil(arr.length*.6))lv=Math.min(i+1,LV.length-1);else break;
+    if(arr.filter(x=>mastered(x.id)).length>=Math.min(Math.ceil(arr.length*.6),LVNEED[i]))lv=Math.min(i+1,LV.length-1);else break;
   }
   return lv;
 }
 function showLessons(sel){homeLv=sel==null?null:sel;goHome("lessons")}
 function showLessonsOld(sel){
   const now=myLevel();if(sel==null)sel=now;
-  const rud=sel==="r",list=rud?RUD:LES.filter(x=>x.lv===sel);
+  const rud=sel==="r",drl=sel==="d",list=rud?RUD:drl?DRL:LES.filter(x=>x.lv===sel);
   const chips=LV.map((n,i)=>`<button class="btn${i===sel?" main":""}" data-lv="${i}">${n}</button>`).join("")+`<button class="btn${rud?" main":""}" data-lv="r">Rudiments</button>`;
   const next=LES.find(x=>!mastered(x.id));
   const rows=list.map(x=>{const b=bestOf(x.id),gd=gget(x.id);return `<div class="srow"><button class="btn" data-id="${x.id}">${mastered(x.id)?"✓ ":""}${esc(x.n)}</button><span>${rud?LV[x.lv]+" · ":""}${x.bpm} BPM${b!=null?" · "+b+"%":gd>=0?" · "+(gd+1)+" of 5 steps":""}</span></div>`}).join("");
@@ -1255,7 +1336,7 @@ function showCoach(les){
   panel(`<h2>${esc(les.n)}</h2><p style="color:var(--mute);margin:0">${lvName(les)} · ${les.bpm} BPM · you play: ${lesPads(les).join(", ")}</p>${tip?`<div class="tip">${tip}</div>`:""}<h3>Coach me</h3><p class="cnote">Learn it the way you learn to drive: ride along first, then drive slowly in an empty car park, then on quiet roads, then in real traffic. The next step starts when you pass this one. Tap any step to jump to it.</p><ul class="ladder">${lad}</ul><div class="btns">${m?`<button class="btn main" id="cFree">Play it</button><button class="btn" id="cGo">Coach me from step 1</button>`:`<button class="btn main" id="cGo">${done<0?"Start: Listen":"Continue: "+STEPS[nk].n}</button><button class="btn" id="cFree">Practise freely</button>`}<button class="btn" id="cBack">All lessons</button></div>`);
   $("cGo").onclick=()=>{closePanel();guideStep(les,m?0:nk)};
   $("cFree").onclick=()=>{wq=null;closePanel();openLesson(les)};
-  $("cBack").onclick=()=>showLessons(les.rud?"r":les.lv);
+  $("cBack").onclick=()=>showLessons(les.rud?"r":les.drl?"d":les.lv);
   document.querySelectorAll("#resCard [data-step]").forEach(b=>b.onclick=()=>{closePanel();guideStep(les,+b.dataset.step)});
 }
 function guideStep(les,k){
@@ -1372,7 +1453,7 @@ function startCalib(){
 
 /* ---------- help, welcome, tools ---------- */
 function nextLesson(){
-  const arr=RUD.some(x=>"lesson:"+x.id===songId)?RUD:LES;
+  const arr=RUD.some(x=>"lesson:"+x.id===songId)?RUD:DRL.some(x=>"lesson:"+x.id===songId)?DRL:LES;
   const o=[...arr].sort((a,b)=>a.lv-b.lv||arr.indexOf(a)-arr.indexOf(b));
   const i=o.findIndex(x=>"lesson:"+x.id===songId);
   return o.slice(i+1).find(x=>!mastered(x.id))||o.find(x=>!mastered(x.id))||null;
@@ -1473,13 +1554,14 @@ function showFree(){
 function workoutPlan(){
   const lv=myLevel(),pick=(l,k)=>LES.filter(x=>x.lv===l).sort((a,b)=>(bestOf(a.id)??-1)-(bestOf(b.id)??-1))[k];
   const rw=RUD.filter(x=>x.lv<=lv).sort((a,b)=>(bestOf(a.id)??-1)-(bestOf(b.id)??-1)||a.lv-b.lv)[0];
-  const q=[rw,LES.filter(x=>x.lv===Math.max(0,lv-1))[0],pick(lv,0),pick(lv,1),pick(lv,2)];
+  const dw=DRL.filter(x=>x.lv<=lv).sort((a,b)=>(bestOf(a.id)??-1)-(bestOf(b.id)??-1)||b.lv-a.lv)[0];
+  const q=[rw,dw,LES.filter(x=>x.lv===Math.max(0,lv-1))[0],pick(lv,0),pick(lv,1),pick(lv,2)];
   if(lv<LV.length-1)q.push(pick(lv+1,0));
   return [...new Set(q.filter(Boolean))];
 }
 function showWorkout(){
   const plan=workoutPlan(),mins=Math.round(plan.reduce((a,x)=>a+(x.rep*2*x.bars.length*(x.ts||4)*60/x.bpm)/60,0));
-  panel(`<h2>Daily workout</h2><p>${plan.length} lessons picked for your level (<b>${LV[myLevel()]}</b>), about ${mins} minutes. It starts with a rudiment to warm up your hands, then an easier groove, and ends with a stretch.</p>${plan.map((x,i)=>`<div class="srow"><span style="color:var(--ink)">${i+1}. ${esc(x.n)}</span><span>${lvName(x)}</span></div>`).join("")}<div class="btns"><button class="btn main" id="wGo">Start workout</button><button class="btn" id="rClose">Close</button></div>`);
+  panel(`<h2>Daily workout</h2><p>${plan.length} lessons picked for your level (<b>${LV[myLevel()]}</b>), about ${mins} minutes. It starts with a rudiment to warm up your hands and a drill, then an easier groove, and ends with a stretch.</p>${plan.map((x,i)=>`<div class="srow"><span style="color:var(--ink)">${i+1}. ${esc(x.n)}</span><span>${lvName(x)}</span></div>`).join("")}<div class="btns"><button class="btn main" id="wGo">Start workout</button><button class="btn" id="rClose">Close</button></div>`);
   $("rClose").onclick=closePanel;
   $("wGo").onclick=()=>{wq=plan;wi=0;closePanel();openLesson(wq[0],2);play()};
 }
@@ -1605,6 +1687,7 @@ function assignStick(out){
   });
 }
 const NEWS=[
+{v:"1.14.0",items:["21 more lessons across all five levels, placed in learning order: eighth-note hi-hat, kick and snare only, crash landings, floor-tom groove, a first tom fill, hits and rests, two-handed sixteenths, ghost notes, a 12/8 blues ballad, triplet and sixteenth fills, samba, tribal toms, band hits, double-time punk, a 3-3-2 groove and a linear fill.","5 more rudiments: triple strokes, inverted paradiddle, six-stroke roll, triple paradiddle, and a paradiddle between snare and tom.","New Drills track with 13 short exercises: subdivision ladder and pyramid, play and rest, hand and foot together, kick eighths, crash on every 1, round-the-kit eighths and sixteenths, hi-hat foot, jazz ride and comping, kick independence and speed bursts. The Daily workout now includes a drill.","Every new lesson, rudiment and drill has a coach card with an everyday comparison and step-by-step practice. New lessons count towards your level but never make levelling up harder."]},
 {v:"1.13.0",items:["New layout. The app opens on a library with tabs: Lessons, My music, Create, Progress and Settings. Lessons are cards with stars, BPM, length and the pads you will use.","Tapping a lesson or song opens a separate play screen. Pick a mode at the top: Listen, Learn (waits for you), Play or Perform. Tempo has − and + buttons.","Notes now move across the screen from right to left towards the hit line, with bar numbers. You can switch back to falling notes in Settings or with the ⋯ button.","Loop, metronome, backing music and view options are under the ⋯ button on the play screen. Back (‹) returns to the library.","The touch pads hide when a drum kit is connected. Change this in Settings, Display."]},
 {v:"1.12.0",items:["Coach me: tap a lesson for a coach card that explains the groove in everyday terms and walks you through five steps: listen, learn it with wait-for-me, then 70%, 85% and full speed. The next step starts when you pass the one before.","Rudiments: eight sticking patterns (singles, doubles, paradiddles, triplets, five-stroke roll and a paradiddle groove) under Lessons, Rudiments. The Daily workout now starts with one.","Silent bars (Tools): the click and backing drop out for some bars while you keep time yourself. Results show whether you rushed or dragged without the click.","Results now show every bar coloured by how you did. Tap a bar to loop it more slowly. On lessons played on a kit, results also show how even your strokes are.","Progress now opens My progress: a practice calendar, lessons mastered per level, lessons that are almost there, and mastered ones due for a review."]},
 {v:"1.11.1",items:["Single letters are always chords, in capitals or small letters: g or G is the G chord, am is A minor, c/g is C/G.","Sargam needs the full name: Sa, Re, Ga, Ma, Pa, Dha, Ni (any case). Short forms like S, M or G are not read as sargam."]},
@@ -3029,7 +3112,7 @@ function lessonLanes(les){const s=new Set();les.bars.forEach(b=>Object.keys(b).f
 function lessonMins(x){return Math.max(1,Math.round(x.rep*x.bars.length*(x.ts||4)*60/x.bpm/60))}
 
 function goHome(tab){
-  if(playing)pause();if(perf)setPerf(false);closeSheet();
+  if(playing)pause();if(perf)setPerf(false);closeSheet();closePanel();
   document.body.classList.remove("playing");$("player").hidden=true;$("home").hidden=false;
   renderHome(tab||homeTab);
 }
@@ -3055,14 +3138,14 @@ function renderHome(tab){
 function homeLessons(){
   const lv=myLevel(),sel=homeLv==null?lv:homeLv,next=LES.find(x=>!mastered(x.id))||LES[0];
   const plan=workoutPlan(),wm=Math.round(plan.reduce((a,x)=>a+lessonMins(x)*2,0));
-  const rud=sel==="r",list=rud?RUD:LES.filter(x=>x.lv===sel);
+  const rud=sel==="r",drl=sel==="d",list=rud?RUD:drl?DRL:LES.filter(x=>x.lv===sel);
   const chips=LV.map((n,i)=>{const arr=LES.filter(x=>x.lv===i),m=arr.filter(x=>mastered(x.id)).length;return `<button data-lv="${i}" class="${i===sel?"on":""}">${n}<small>${m}/${arr.length}</small></button>`}).join("")
-    +`<button data-lv="r" class="${rud?"on":""}">Rudiments<small>${RUD.filter(x=>mastered(x.id)).length}/${RUD.length}</small></button>`;
+    +`<button data-lv="r" class="${rud?"on":""}">Rudiments<small>${RUD.filter(x=>mastered(x.id)).length}/${RUD.length}</small></button>`+`<button data-lv="d" class="${drl?"on":""}">Drills<small>${DRL.filter(x=>mastered(x.id)).length}/${DRL.length}</small></button>`;
   const cards=list.map(x=>{
     const b=bestOf(x.id);
     return `<button class="lc" data-les="${x.id}"><span class="strip" style="background:${LVC[x.lv]}"></span>
       <span class="n">${esc(x.n)}</span>
-      <span class="m">${rud?`<span>${LV[x.lv]}</span>`:""}<span>${x.bpm} BPM</span><span>${x.ts||4}/4${x.r===3?" · triplets":""}</span><span>~${lessonMins(x)} min</span></span>${x.st?`<span class="m" style="font-family:ui-monospace,monospace;letter-spacing:1px">${esc(x.st[0].replace(/\./g,"·"))}</span>`:""}
+      <span class="m">${rud||drl?`<span>${LV[x.lv]}</span>`:""}<span>${x.bpm} BPM</span><span>${x.ts||4}/4${x.r===3?" · triplets":x.r===12?" · mixed notes":""}</span><span>~${lessonMins(x)} min</span></span>${x.st?(s=>`<span class="m" style="font-family:ui-monospace,monospace;letter-spacing:1px">${esc(s.length>16?s.replace(/\./g,"").slice(0,16):s.replace(/\./g,"·"))}</span>`)(x.st.find(Boolean)):""}
       <span class="dots">${lessonLanes(x).map(l=>`<i title="${L[l].n}" style="background:${L[l].c}"></i>`).join("")}</span>
       <span class="f">${starHtml(b)}${mastered(x.id)?`<span class="done">✓ Mastered</span>`:b!=null?`<span class="mutey">best ${b}%</span>`:`<span class="mutey">new</span>`}</span></button>`;
   }).join("");
@@ -3072,7 +3155,7 @@ function homeLessons(){
     <button class="tile" data-act="free"><span class="k">Free play</span><span class="t">Just a click</span><span class="d">Jam to a metronome at any tempo</span><span class="go">Open</span></button>
   </div>
   <div class="sect"><h3>Lessons</h3><span class="mutey">Your level: <b style="color:var(--ink)">${LV[lv]}</b></span></div>
-  <div class="lvls">${chips}</div>${rud?`<p class="sub" style="margin:0 2px 12px">Rudiments are the scales of drumming: short sticking patterns that build control. Follow the R and L sticking even when another way feels easier.</p>`:""}<div class="grid">${cards}</div>
+  <div class="lvls">${chips}</div>${drl?`<p class="sub" style="margin:0 2px 12px">Drills are short workouts for one skill at a time: counting, moving round the kit, using hands and feet independently, and speed. Do one a day as a warm-up.</p>`:""}${rud?`<p class="sub" style="margin:0 2px 12px">Rudiments are the scales of drumming: short sticking patterns that build control. Follow the R and L sticking even when another way feels easier.</p>`:""}<div class="grid">${cards}</div>
   <p class="mutey">Tap a lesson for its coach card and step-by-step practice plan. Three stars at 95%, two at 85%, one at 70%. A lesson is mastered at 85% or better at 90% tempo or faster.</p>`;
 }
 function homeMusic(){
@@ -3113,7 +3196,7 @@ function homeProgress(){
   for(const id in hist)for(const r of hist[id].runs)runs.push({...r,name:hist[id].name});
   runs.sort((a,b)=>b.d-a.d);
   const lvRows=LV.map((n,i)=>{const arr=LES.filter(x=>x.lv===i),m=arr.filter(x=>mastered(x.id)).length;return `<div class="lvrow"><span>${n}</span><span class="bar2"><i style="width:${Math.round(m/arr.length*100)}%;background:${LVC[i]}"></i></span><span>${m} / ${arr.length}</span></div>`}).join("")
-    +(()=>{const m=RUD.filter(x=>mastered(x.id)).length;return `<div class="lvrow"><span>Rudiments</span><span class="bar2"><i style="width:${Math.round(m/RUD.length*100)}%;background:var(--gold)"></i></span><span>${m} / ${RUD.length}</span></div>`})();
+    +(()=>{const m=RUD.filter(x=>mastered(x.id)).length;return `<div class="lvrow"><span>Rudiments</span><span class="bar2"><i style="width:${Math.round(m/RUD.length*100)}%;background:var(--gold)"></i></span><span>${m} / ${RUD.length}</span></div>`})()+(()=>{const m=DRL.filter(x=>mastered(x.id)).length;return `<div class="lvrow"><span>Drills</span><span class="bar2"><i style="width:${Math.round(m/DRL.length*100)}%;background:var(--accent)"></i></span><span>${m} / ${DRL.length}</span></div>`})();
   return `<div class="sect"><h2 class="hh" style="margin:0">Progress</h2><button class="btn main" data-act="over">Calendar and review list</button></div>
   <div class="stat3">
     <div class="tile"><span class="k">Today</span><span class="v">${Math.round(day(0)/60)}</span><span class="d">minutes</span></div>
@@ -3127,7 +3210,7 @@ function homeProgress(){
 }
 function wireHome(){
   const H=$("homeBody"),on=(sel,fn)=>H.querySelectorAll(sel).forEach(el=>el.onclick=e=>{e.stopPropagation();fn(el)});
-  on("[data-lv]",b=>{homeLv=b.dataset.lv==="r"?"r":+b.dataset.lv;renderHome("lessons")});
+  on("[data-lv]",b=>{const v=b.dataset.lv;homeLv=v==="r"||v==="d"?v:+v;renderHome("lessons")});
   on("[data-les]",b=>showCoach(findLes(b.dataset.les)));
   on("[data-act]",b=>{const a=b.dataset.act;
     if(a==="next")showCoach(LES.find(x=>!mastered(x.id))||LES[0]);
@@ -3273,7 +3356,7 @@ renderHome("lessons");
 songTime=-2;resize();requestAnimationFrame(frame);
 </script>
 <script>
-const APP_VERSION="1.13.0";
+const APP_VERSION="1.14.0";
 document.getElementById("ver").textContent="v"+APP_VERSION;
 try{
   const prev=localStorage.getItem("sw_ver");

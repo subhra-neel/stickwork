@@ -1,4 +1,4 @@
-# Stickwork v1.13.0
+# Stickwork v1.14.0
 
 Personal drum practice app (installable web app) for an e-drum kit, touch screen or keyboard.
 
@@ -16,6 +16,14 @@ Personal drum practice app (installable web app) for an e-drum kit, touch screen
 ## Updating
 For a new version, replace `index.html` and `sw.js`. Open the app and tap **Update** on the banner.
 The version is shown under Settings, and What's new appears after an update.
+
+## What's in v1.14.0 (more lessons and drills)
+- 21 more lessons across all levels, placed in learning order (57 in all): Beginner 9, Elementary 11, Intermediate 15, Advanced 12, Expert 10.
+- 5 more rudiments (13 in all): triple strokes, inverted paradiddle, six-stroke roll, triple paradiddle, paradiddle between snare and tom.
+- New Drills track (13): subdivision ladder and pyramid, play and rest, hand and foot together, kick eighths, crash on every 1, round-the-kit eighths and sixteenths, hi-hat foot, jazz ride and comping, kick independence, speed bursts. The Daily workout includes a drill.
+- Every new item has a coach card with an everyday comparison and the five-step practice plan.
+- New lessons count towards your level but never make levelling up harder.
+- Fix: Back on a coach card now closes the card.
 
 ## What's in v1.13.0 (new layout)
 - The app opens on a library with tabs: Lessons, My music, Create, Progress and Settings. Lessons and rudiments are cards with stars, BPM, length and the pads you will use. Tapping one opens its coach card.
